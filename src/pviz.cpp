@@ -1654,3 +1654,112 @@ void PViz::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int
   marker.points = poses;
   marker_publisher_.publish(marker);
 }
+
+void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open)
+{
+  visualization_msgs::MarkerArray m;
+  getGripperMeshesMarkerMsg(pose, hue, ns, id, open, m.markers);
+  publishMarkerArray(m);
+}
+
+void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open, std::vector<visualization_msgs::Marker> &markers)
+{
+  static geometry_msgs::Pose g1, g2, g3, g4, g5, g6, g7, g8;
+  // g1 = r_gripper_r_finger_link in r_gripper_palm - OPEN
+  g1.position.x = 0.077; g1.position.y = -0.010; g1.position.z = 0.00;
+  g1.orientation.x = 0.0; g1.orientation.y = 0.0; g1.orientation.z = -0.231; g1.orientation.w = 0.973;
+  // g2 = r_gripper_l_finger_link in r_gripper_palm - OPEN
+  g2 = g1; g2.position.y = 0.010; g2.orientation.z = 0.231;
+  // g3 = r_gripper_r_finger_tip_link in r_gripper_palm - OPEN
+  g3.position.x = 0.156; g3.position.y = -0.056; g3.position.z = 0.00;
+  g3.orientation.x = 0.0; g3.orientation.y = 0.0; g3.orientation.z = 0.0; g3.orientation.w = 1.000;
+  // g4 = r_gripper_l_finger_tip_link in r_gripper_palm - OPEN
+  g4 = g3; g4.position.y = 0.056;
+  // g5 = r_gripper_r_finger_link in r_gripper_palm - CLOSED
+  g5 = g1; g5.orientation.x = 0.0; g5.orientation.y = 0.0; g5.orientation.z = 0.004; g5.orientation.w = 1.000;
+  // g6 = r_gripper_l_finger_link in r_gripper_palm - CLOSED
+  g6 = g5; g6.position.y = 0.010; g6.orientation.z = -0.004;
+  // g7 = r_gripper_r_finger_tip_link in r_gripper_palm - CLOSED
+  g7.position.x = 0.168; g7.position.y = -0.014; g7.position.z = 0.00;
+  g7.orientation.x = 0.0; g7.orientation.y = 0.0; g7.orientation.z = 0.0; g7.orientation.w = 1.000;
+  // g8 = r_gripper_l_finger_tip_link in r_gripper_palm - CLOSED
+  g8 = g7; g8.position.y = 0.014;
+
+  double r,g,b;
+  visualization_msgs::Marker m;
+  std::vector<geometry_msgs::Pose> p(4);
+
+  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = "base_footprint";
+  m.ns = ns;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = 1.0;
+  m.scale.y = 1.0;
+  m.scale.z = 1.0;
+  m.color.r = r;
+  m.color.g = g;
+  m.color.b = b;
+  m.color.a = 1.0;
+  m.lifetime = ros::Duration(0.0);
+
+  if(open)
+  {
+    p[0] = g1;
+    p[1] = g2;
+    p[2] = g3;
+    p[3] = g4;
+  }
+  else
+  {
+    p[0] = g5;
+    p[1] = g6;
+    p[2] = g7;
+    p[3] = g8;
+  }
+
+  // palm
+  m.mesh_resource = arm_meshes_[9];
+  m.id = id;
+  m.pose = pose;
+  markers.push_back(m);
+
+  // upper_finger_r
+  m.mesh_resource = gripper_meshes_[0];
+  m.id++;
+  multiply(pose, p[0], m.pose);
+  markers.push_back(m);
+
+  // upper_finger_l
+  m.mesh_resource = gripper_meshes_[2];
+  m.id++;
+  multiply(pose, p[1], m.pose);
+  markers.push_back(m);
+
+  m.color.r = 90.0/255.0;
+  m.color.g = 90.0/255.0;
+  m.color.b = 90.0/255.0;
+
+  // finger_tip_r
+  m.mesh_resource = gripper_meshes_[1];
+  m.id++;
+  multiply(pose, p[2], m.pose);
+  markers.push_back(m);
+
+  // finger_tip_l
+  m.mesh_resource = gripper_meshes_[3];
+  m.id++;
+  multiply(pose, p[3], m.pose);
+  markers.push_back(m);
+}
+
+void PViz::multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, geometry_msgs::Pose &c)
+{
+  tf::Transform bta, btb, btc;
+  tf::poseMsgToTF(a, bta);
+  tf::poseMsgToTF(b, btb);
+  btc = bta * btb;
+  tf::poseTFToMsg(btc, c);
+}

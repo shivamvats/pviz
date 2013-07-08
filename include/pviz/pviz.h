@@ -150,6 +150,12 @@ class PViz
 
     void publishMarkerArray(visualization_msgs::MarkerArray &marker_array);
 
+    void visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open);
+
+    void getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open, std::vector<visualization_msgs::Marker> &markers);
+
+    void multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, geometry_msgs::Pose &c);
+
   private:
 
     ros::NodeHandle nh_;
