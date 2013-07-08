@@ -225,11 +225,14 @@ bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<doubl
   jnt_pos_in_(0) = torso_pos;
   for(size_t i = 0; i < angles.size(); ++i)
     jnt_pos_in_(i+1) = angles[i];
+
   if(angles.size() == 7)
   {
     jnt_pos_in_(8) = 0;
     jnt_pos_in_(9) = 0;
   }
+  else if(angles.size() == 8)
+    jnt_pos_in_(9) = 0;
 
   //ROS_WARN("jnt_pos_in:"); 
   //for(int i = 0; i < jnt_pos_in_.rows(); ++i)
