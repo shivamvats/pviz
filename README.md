@@ -2,8 +2,7 @@ pviz
 ====
 
 PR2 Visualization Library
-
-by Benjamin Cohen (with new features added by Ellis Ratner)
+_by Benjamin Cohen (with new features added by Ellis Ratner)_
 
 A very easy to use library that allows you to visualize the PR2 robot in
 Rviz using visualization markers - with one line of code. It also has easy
@@ -13,32 +12,52 @@ library is great for debugging.
 PViz relies on the KDL for kinematics which means that TF and Gazebo are not
 needed.
 
+**_Note: the master branch should work with Fuerte & Groovy_**
 
 #### Visualization Functions:
 
-  * visualizeRobot
-  * visualizeRobotWithTitle
-  * visualizeGripper
-  * visualizeTrajectory
+##### PR2:
+ * visualizeRobot
+ * visualizeRobotWithTitle
+ * visualizeGripper
+ * visualizeTrajectory
 
-  * visualizePose
-  * visualizeSphere
-  * visualizeCube
-  * visualizeLine
-  * visualizeMesh
+##### Other:
+ * visualizePose
+ * visualizeSphere
+ * visualizeCube
+ * visualizeLine
+ * visualizeMesh
+ * visualizeText
 
 #### Marker Functions:
 
-  * getRobotMarkerMsg
-  * getRobotMeshesMarkerMsg
-  * getGripperMeshesMarkerMsg
-  * getCubeMsg
+##### Get Filled in Marker Msgs:
+ * getRobotMarkerMsg
+ * getRobotMeshesMarkerMsg
+ * getGripperMeshesMarkerMsg
+ * getCubeMsg
 
-  * publishMarker
-  * publishMarkerArray
-  * deleteVisualizations
+##### Work with Marker Msgs:
+ * publishMarker
+ * publishMarkerArray
+ * deleteVisualizations
 
-(Many of the functions above are overloaded with many different options of parameters to use)
+**_(Many of the functions above are overloaded with many different options of parameters to use)_**
+
+## Install
+
+ `git clone https://github.com/bcohen/pviz.git`
+ 
+ `rosmake pviz`
+ 
+## Demo
+
+ `roslaunch pviz pviz_example.launch`
+ 
+ 
+
+
 
 
 
