@@ -1,14 +1,11 @@
 /* \author Ben Cohen */
 
 #include <pviz/pviz.h>
-#define Z_TORSO_LIFT  -0.802
-#define X_TORSO_LIFT 0.05
 
 static std::string RIGHT_CHAIN_RTIP_NAME = "r_gripper_r_finger_tip_link";
 static std::string RIGHT_CHAIN_LTIP_NAME = "r_gripper_l_finger_tip_link";
 static std::string LEFT_CHAIN_RTIP_NAME = "l_gripper_r_finger_tip_link";
 static std::string LEFT_CHAIN_LTIP_NAME = "l_gripper_l_finger_tip_link";
-
 
 void HSVtoRGB( double *r, double *g, double *b, double h, double s, double v )
 {
@@ -62,7 +59,7 @@ void HSVtoRGB( double *r, double *g, double *b, double h, double s, double v )
 PViz::PViz(const std::string &ns)
 {
   num_joints_ = 8; //arm + torso
-  reference_frame_ = "/map"; // maybe should be base_footprint?
+  reference_frame_ = "/map";
 
   srand (time(NULL));
   arm_joint_names_.push_back("_shoulder_pan_joint");
