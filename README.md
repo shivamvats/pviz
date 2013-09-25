@@ -55,6 +55,8 @@ needed.
 
  `roslaunch pviz pviz_example.launch`
  
+ In rviz, change the fixed_frame to "/map" and add a visualization marker display. You can leave the topic in the display as the default.
+ 
  
 
 
