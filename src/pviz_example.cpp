@@ -40,7 +40,7 @@ int main(int argc, char** argv)
   sleep(1);
   printf("Filename: %s", filename.c_str());
 
-  pviz.visualizeTrajectoryFromFile(filename);
+  pviz.visualizeTrajectoryFromFile(filename, true);
   ros::spinOnce();
   sleep(10);
   return 0;

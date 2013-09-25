@@ -4,11 +4,6 @@
 #define Z_TORSO_LIFT  -0.802
 #define X_TORSO_LIFT 0.05
 
-static std::string RIGHT_FK_SERVICE_NAME = "pr2_right_arm_kinematics/get_fk";
-static std::string LEFT_FK_SERVICE_NAME = "pr2_left_arm_kinematics/get_fk";
-static std::string RIGHT_IK_SERVICE_NAME = "pr2_right_arm_kinematics/get_ik";
-static std::string LEFT_IK_SERVICE_NAME = "pr2_left_arm_kinematics/get_ik";
-
 static std::string RIGHT_CHAIN_RTIP_NAME = "r_gripper_r_finger_tip_link";
 static std::string RIGHT_CHAIN_LTIP_NAME = "r_gripper_l_finger_tip_link";
 static std::string LEFT_CHAIN_RTIP_NAME = "l_gripper_r_finger_tip_link";
@@ -64,17 +59,12 @@ void HSVtoRGB( double *r, double *g, double *b, double h, double s, double v )
 	}
 }
 
-PViz::PViz() : ph_("~")
+PViz::PViz(const std::string &ns)
 {
   num_joints_ = 8; //arm + torso
-  reference_frame_ = "map"; // maybe should be base_footprint?
+  reference_frame_ = "/map"; // maybe should be base_footprint?
 
   srand (time(NULL));
-
-  fk_service_name_.resize(2);
-  fk_service_name_[RIGHT] = RIGHT_FK_SERVICE_NAME;
-  fk_service_name_[LEFT] = LEFT_FK_SERVICE_NAME;
-
   arm_joint_names_.push_back("_shoulder_pan_joint");
   arm_joint_names_.push_back("_shoulder_lift_joint");
   arm_joint_names_.push_back("_upper_arm_roll_joint");
@@ -94,35 +84,29 @@ PViz::PViz() : ph_("~")
   torso_link_names_.push_back("torso_lift_link");
   torso_joint_names_.push_back("torso_lift_joint");
 
-  // 0: right, 1: left
-  side_.push_back("r");
-  side_.push_back("l");
-  side_full_.push_back("right");
-  side_full_.push_back("left");
-
   // arm meshes
-  arm_meshes_.push_back("package://pr2_description/meshes/shoulder_v0/shoulder_yaw.stl");
-  arm_meshes_.push_back("package://pr2_description/meshes/shoulder_v0/shoulder_lift.stl");
-  arm_meshes_.push_back("package://pr2_description/meshes/shoulder_v0/upper_arm_roll.stl");
-  arm_meshes_.push_back("package://pr2_description/meshes/upper_arm_v0/upper_arm.stl");
-  arm_meshes_.push_back("package://pr2_description/meshes/upper_arm_v0/elbow_flex.stl");
+  arm_meshes_.push_back("package://pr2_description/meshes/shoulder_v0/shoulder_pan.dae");
+  arm_meshes_.push_back("package://pr2_description/meshes/shoulder_v0/shoulder_lift.dae");
+  arm_meshes_.push_back("package://pr2_description/meshes/shoulder_v0/upper_arm_roll.dae");
+  arm_meshes_.push_back("package://pr2_description/meshes/upper_arm_v0/upper_arm.dae");
+  arm_meshes_.push_back("package://pr2_description/meshes/upper_arm_v0/elbow_flex.dae");
   arm_meshes_.push_back("package://pr2_description/meshes/upper_arm_v0/forearm_roll.stl");  
-  arm_meshes_.push_back("package://pr2_description/meshes/forearm_v0/forearm.stl");
-  arm_meshes_.push_back("package://pr2_description/meshes/forearm_v0/wrist_flex.stl");
+  arm_meshes_.push_back("package://pr2_description/meshes/forearm_v0/forearm.dae");
+  arm_meshes_.push_back("package://pr2_description/meshes/forearm_v0/wrist_flex.dae");
   arm_meshes_.push_back("package://pr2_description/meshes/forearm_v0/wrist_roll.stl");
-  arm_meshes_.push_back("package://pr2_description/meshes/gripper_v0/gripper_palm.stl");
+  arm_meshes_.push_back("package://pr2_description/meshes/gripper_v0/gripper_palm.dae");
 
   // gripper meshes
-  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/upper_finger_r.stl");
-  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/finger_tip_r.stl");
-  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/upper_finger_l.stl");
-  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/finger_tip_l.stl");
+  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/l_finger.dae");
+  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/l_finger_tip.dae");
+  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/l_finger.dae");  
+  gripper_meshes_.push_back("package://pr2_description/meshes/gripper_v0/l_finger_tip.dae");
 
   // torso_meshes
-  torso_meshes_.push_back("package://pr2_description/meshes/torso_v0/torso_lift.stl");
+  torso_meshes_.push_back("package://pr2_description/meshes/torso_v0/torso_lift.dae");
   
   // base meshes
-  base_meshes_.push_back("package://pr2_description/meshes/base_v0/base.stl");
+  base_meshes_.push_back("package://pr2_description/meshes/base_v0/base.dae");
 
   robot_meshes_.insert(robot_meshes_.end(),base_meshes_.begin(), base_meshes_.end());  // 1
   robot_meshes_.insert(robot_meshes_.end(),torso_meshes_.begin(), torso_meshes_.end()); // 1
@@ -137,8 +121,20 @@ PViz::PViz() : ph_("~")
     fflush(stdout);
   }
 
-  marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 500);
-  marker_publisher_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
+  if(ns.size() > 0)
+  {
+    std::stringstream ss;
+    ss << "/" << ns << "/visualization_marker_array";
+    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>(ss.str(), 500);
+    ss.str(std::string());
+    ss << "/" << ns << "/visualization_marker";
+    marker_publisher_ = nh_.advertise<visualization_msgs::Marker>(ss.str(), 1000);
+  }
+  else
+  {
+    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 500);
+    marker_publisher_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
+  }
 }
 
 PViz::~PViz()
@@ -232,8 +228,9 @@ bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<doubl
     jnt_pos_in_(9) = 0;
   }
   else if(angles.size() == 8)
-    jnt_pos_in_(9) = 0;
-
+  {
+    jnt_pos_in_(9) = jnt_pos_in_(8);
+  }
   //ROS_WARN("jnt_pos_in:"); 
   //for(int i = 0; i < jnt_pos_in_.rows(); ++i)
   //  ROS_WARN("%d: %0.3f", i, jnt_pos_in_(i));
@@ -394,34 +391,6 @@ void PViz::publishMarkerArray(visualization_msgs::MarkerArray &marker_array)
   marker_array_publisher_.publish(marker_array);
   usleep(1000);
 }
-
-/*
-void PViz::visualizeArmConfigurations(const std::vector<std::vector<double> > &traj, int arm, int throttle)
-{
-  double color_inc = 260/traj.size();   //260 is blue
-  std::vector<double> zero_config(num_joints_,0);
-
-  ROS_INFO("visualizeArmConfigurations is not yet fully functional - torso is set to 0");
-  //always print out first & last configs
-  visualizeArmConfiguration(color_inc*(1), arm, traj[0], 0.0);
-  visualizeArmConfiguration(color_inc*((traj.size()-1)+1), arm, traj[traj.size()-1], 0.0);
-  
-  for(int i = 1; i < (int)traj.size(); i++)
-  {
-    //hack: some trajectories get parsed with an additional vector of zeroes 
-    if(traj[i] == zero_config)
-    {
-      ROS_WARN("[visualizeArmConfigurations] Not displaying arm configurations of all zeroes.");
-      continue;
-    }
-
-    if(i % throttle != 0)
-      continue;
-
-    visualizeArmConfiguration(color_inc*(i+1), arm, traj[i], 0.0);
-  }
-}
-*/
 
 void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
 {
@@ -800,10 +769,6 @@ void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int c
     marker.pose.position.z = pose[i][2];
 
     marker_array.markers.push_back(marker);
-    /*
-    marker_publisher_.publish(marker);
-    usleep(100);
-    */
   }
   marker_array_publisher_.publish(marker_array);
 }
@@ -1323,6 +1288,14 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
     {
       if(!computeFKwithKDL(jnt0_pos, base_pos, torso_pos, RIGHT, i+1, poses[i].pose))
         return false;
+
+      // right arm, right finger (to rotate the mesh)
+      if(i == 13 || i == 12)
+      {
+	geometry_msgs::Pose p;
+	p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
+	multiply(poses[i].pose, p, poses[i].pose);
+      }
     }
     // right arm - left finger only
     else if(13 < i && i < 16)
@@ -1335,6 +1308,13 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
      {
       if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, LEFT, i-13, poses[i].pose))
         return false;
+
+      if(i == 26 || i == 27)
+      {
+	geometry_msgs::Pose p;
+	p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
+	multiply(poses[i].pose, p, poses[i].pose);
+      }
     }
     // left arm - left finger only
     else /* if(27 < i) */
@@ -1349,7 +1329,7 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
   return true;
 }
 
-void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses)
+void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials)
 {
   double r,g,b;
   marker_array_.markers.clear();
@@ -1370,11 +1350,21 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
     marker_array_.markers[i].scale.x = 1.0;
     marker_array_.markers[i].scale.y = 1.0;
     marker_array_.markers[i].scale.z = 1.0;
-
-    marker_array_.markers[i].color.r = r;
-    marker_array_.markers[i].color.g = g;
-    marker_array_.markers[i].color.b = b;
-    marker_array_.markers[i].color.a = 0.4;
+    if(use_embedded_materials)
+    {
+      marker_array_.markers[i].color.r = 0;
+      marker_array_.markers[i].color.g = 0;
+      marker_array_.markers[i].color.b = 0;
+      marker_array_.markers[i].color.a = 0;
+      marker_array_.markers[i].mesh_use_embedded_materials = true;
+    }
+    else
+    {
+      marker_array_.markers[i].color.r = r;
+      marker_array_.markers[i].color.g = g;
+      marker_array_.markers[i].color.b = b;
+      marker_array_.markers[i].color.a = 0.4;
+    }
     marker_array_.markers[i].lifetime = ros::Duration(120.0);
 
     //ROS_INFO("i=%d",i);
@@ -1384,7 +1374,7 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   marker_array_publisher_.publish(marker_array_);
 }
 
-visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses)
+visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials)
 {
   double r,g,b;
   marker_array_.markers.clear();
@@ -1404,10 +1394,21 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
     marker_array_.markers[i].scale.x = 1.0;
     marker_array_.markers[i].scale.y = 1.0;
     marker_array_.markers[i].scale.z = 1.0;
-    marker_array_.markers[i].color.r = r;
-    marker_array_.markers[i].color.g = g;
-    marker_array_.markers[i].color.b = b;
-    marker_array_.markers[i].color.a = 0.4;
+    if(use_embedded_materials)
+    {
+      marker_array_.markers[i].color.r = 0;
+      marker_array_.markers[i].color.g = 0;
+      marker_array_.markers[i].color.b = 0;
+      marker_array_.markers[i].color.a = 0;
+      marker_array_.markers[i].mesh_use_embedded_materials = true;
+    }
+    else
+    {
+      marker_array_.markers[i].color.r = r;
+      marker_array_.markers[i].color.g = g;
+      marker_array_.markers[i].color.b = b;
+      marker_array_.markers[i].color.a = 0.4;
+    }
     marker_array_.markers[i].lifetime = ros::Duration(120.0);
     marker_array_.markers[i].mesh_resource = robot_meshes_[i];
   }
@@ -1423,17 +1424,17 @@ void PViz::getMaptoRobotTransform(double x, double y, double theta, KDL::Frame &
   frame = base_footprint_in_map;
 }
 
-void PViz::visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, std::vector<double> &base_pos, double torso_pos, double hue, std::string ns, int id)
+void PViz::visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, std::vector<double> &base_pos, double torso_pos, double hue, std::string ns, int id, bool use_embedded_materials)
 {
   std::vector<geometry_msgs::PoseStamped> poses;
   if(!computeFKforVisualizationWithKDL(jnt0_pos, jnt1_pos, base_pos, torso_pos, poses))
 
     ROS_WARN("Unable to compute forward kinematics.");
   else
-    visualizeRobotMeshes(hue, ns, id, poses);
+    visualizeRobotMeshes(hue, ns, id, poses, use_embedded_materials);
 }
 
-void PViz::visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id)
+void PViz::visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, bool use_embedded_materials)
 {
   double torso_pos;
   std::vector<double> base_pos(3,0);
@@ -1448,10 +1449,10 @@ void PViz::visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jn
 
     ROS_WARN("Unable to compute forward kinematics.");
   else
-    visualizeRobotMeshes(hue, ns, id, poses);
+    visualizeRobotMeshes(hue, ns, id, poses, use_embedded_materials);
 }
 
-visualization_msgs::MarkerArray PViz::getRobotMarkerMsg(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id)
+visualization_msgs::MarkerArray PViz::getRobotMarkerMsg(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, bool use_embedded_materials)
 {
   double torso_pos;
   std::vector<double> base_pos(3,0);
@@ -1468,7 +1469,7 @@ visualization_msgs::MarkerArray PViz::getRobotMarkerMsg(std::vector<double> &jnt
     return visualization_msgs::MarkerArray();
   } 
   else
-    return getRobotMeshesMarkerMsg(hue, ns, id, poses);
+    return getRobotMeshesMarkerMsg(hue, ns, id, poses, use_embedded_materials);
 }
 
 bool PViz::parseCSVFile(std::string filename, int num_cols, std::vector<std::vector<double> > &data)
@@ -1528,14 +1529,14 @@ bool PViz::parseCSVFile(std::string filename, int num_cols, std::vector<std::vec
   return true;
 }
 
-bool PViz::visualizeTrajectoryFromFile(std::string filename)
+bool PViz::visualizeTrajectoryFromFile(std::string filename, bool use_embedded_materials)
 {
   double torso = 0;
   std::vector<double> jnt0_pos(7,0), jnt1_pos(7,0), base_pos(3,0);
   std::vector<std::vector<double> > traj;
   if(!parseCSVFile(filename, 18, traj))
   {
-    ROS_ERROR("Failed to parse trajectory file: %s", filename.c_str());
+    ROS_ERROR("[pviz] Failed to parse trajectory file: %s", filename.c_str());
     return false;
   }
 
@@ -1553,11 +1554,10 @@ bool PViz::visualizeTrajectoryFromFile(std::string filename)
     torso = traj[i][3];
 
     ROS_INFO("[pviz] %d: visualizing robot...", int(i));
-    visualizeRobot(jnt0_pos,jnt1_pos,base_pos,torso,(30*i)%300,"full_body_waypoint_"+boost::lexical_cast<std::string>(i),i);
+    visualizeRobot(jnt0_pos,jnt1_pos,base_pos,torso,(30*i)%300,"full_body_waypoint_"+boost::lexical_cast<std::string>(i),i, use_embedded_materials);
     ros::spinOnce();
-    sleep(1.0);
+    usleep(10000);
   }
-
   return true;
 }
 
@@ -1670,26 +1670,42 @@ void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::st
 
 void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open, std::vector<visualization_msgs::Marker> &markers)
 {
+  static geometry_msgs::Pose rot;
+  rot.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
   static geometry_msgs::Pose g1, g2, g3, g4, g5, g6, g7, g8;
   // g1 = r_gripper_r_finger_link in r_gripper_palm - OPEN
   g1.position.x = 0.077; g1.position.y = -0.010; g1.position.z = 0.00;
   g1.orientation.x = 0.0; g1.orientation.y = 0.0; g1.orientation.z = -0.231; g1.orientation.w = 0.973;
+  multiply(g1, rot, g1);
   // g2 = r_gripper_l_finger_link in r_gripper_palm - OPEN
-  g2 = g1; g2.position.y = 0.010; g2.orientation.z = 0.231;
+  g2.position.x = 0.077; g2.position.y = 0.010; g2.position.z = 0.00;
+  g2.orientation.x = 0.0; g2.orientation.y = 0.0; g2.orientation.z = 0.231; g2.orientation.w = 0.973;
+  // g2 = g1; g2.position.y = 0.010; g2.orientation.z = 0.231;
   // g3 = r_gripper_r_finger_tip_link in r_gripper_palm - OPEN
   g3.position.x = 0.156; g3.position.y = -0.056; g3.position.z = 0.00;
   g3.orientation.x = 0.0; g3.orientation.y = 0.0; g3.orientation.z = 0.0; g3.orientation.w = 1.000;
+  multiply(g3, rot, g3);
   // g4 = r_gripper_l_finger_tip_link in r_gripper_palm - OPEN
-  g4 = g3; g4.position.y = 0.056;
+  g4.position.x = 0.156; g4.position.y = 0.056; g4.position.z = 0.00;
+  g4.orientation.x = 0.0; g4.orientation.y = 0.0; g4.orientation.z = 0.0; g4.orientation.w = 1.000;
+  // g4 = g3; g4.position.y = 0.056;
   // g5 = r_gripper_r_finger_link in r_gripper_palm - CLOSED
-  g5 = g1; g5.orientation.x = 0.0; g5.orientation.y = 0.0; g5.orientation.z = 0.004; g5.orientation.w = 1.000;
+  g5.position.x = 0.077; g5.position.y = -0.010; g5.position.z = 0.00;
+  g5.orientation.x = 0.0; g5.orientation.y = 0.0; g5.orientation.z = 0.004; g5.orientation.w = 1.000;
+  // g5 = g1; g5.orientation.x = 0.0; g5.orientation.y = 0.0; g5.orientation.z = 0.004; g5.orientation.w = 1.000;
+  multiply(g5, rot, g5);
   // g6 = r_gripper_l_finger_link in r_gripper_palm - CLOSED
-  g6 = g5; g6.position.y = 0.010; g6.orientation.z = -0.004;
+  g6.position.x = 0.077; g6.position.y = 0.010; g6.position.z = 0.00;
+  g6.orientation.x = 0.0; g6.orientation.y = 0.0; g6.orientation.z = -0.004; g6.orientation.w = 1.000;
+  // g6 = g5; g6.position.y = 0.010; g6.orientation.z = -0.004;
   // g7 = r_gripper_r_finger_tip_link in r_gripper_palm - CLOSED
   g7.position.x = 0.168; g7.position.y = -0.014; g7.position.z = 0.00;
   g7.orientation.x = 0.0; g7.orientation.y = 0.0; g7.orientation.z = 0.0; g7.orientation.w = 1.000;
+  multiply(g7, rot, g7);
   // g8 = r_gripper_l_finger_tip_link in r_gripper_palm - CLOSED
-  g8 = g7; g8.position.y = 0.014;
+  g8.position.x = 0.168; g8.position.y = 0.014; g8.position.z = 0.00;
+  g8.orientation.x = 0.0; g8.orientation.y = 0.0; g8.orientation.z = 0.0; g8.orientation.w = 1.000;
+  // g8 = g7; g8.position.y = 0.014;
 
   double r,g,b;
   visualization_msgs::Marker m;
@@ -1761,6 +1777,126 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   markers.push_back(m);
 }
 
+void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue, 
+				     std::string ns, int id, double position, 
+				     std::vector<visualization_msgs::Marker> &markers)
+{
+  static geometry_msgs::Pose rot;
+  rot.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
+  // r_gripper_r_finger_link in r_gripper_palm
+  static geometry_msgs::Pose rgrfl_in_rgp;
+  rgrfl_in_rgp.position.x = 0.077;
+  rgrfl_in_rgp.position.y = -0.010;
+  rgrfl_in_rgp.position.z = 0.00;
+  rgrfl_in_rgp.orientation.x = 0.0;
+  rgrfl_in_rgp.orientation.y = 0.0;
+  rgrfl_in_rgp.orientation.z = 0.004;
+  rgrfl_in_rgp.orientation.w = 1.000;
+  multiply(rgrfl_in_rgp, rot, rgrfl_in_rgp);
+
+  // r_gripper_l_finger_link in r_gripper_palm
+  static geometry_msgs::Pose rglfl_in_rgp;
+  rglfl_in_rgp.position.x = 0.077;
+  rglfl_in_rgp.position.y = 0.010;
+  rglfl_in_rgp.position.z = 0.00;
+  rglfl_in_rgp.orientation.x = 0.0;
+  rglfl_in_rgp.orientation.y = 0.0;
+  rglfl_in_rgp.orientation.z = -0.004;
+  rglfl_in_rgp.orientation.w = 1.000;
+    
+  // r_gripper_r_finger_tip_link in r_gripper_r_finger_link
+  static geometry_msgs::Pose rgrftl_in_rgrfl;
+  rgrftl_in_rgrfl.position.x = 0.091;
+  rgrftl_in_rgrfl.position.y = -0.005;
+  rgrftl_in_rgrfl.position.z = 0.000;
+  rgrftl_in_rgrfl.orientation.x = 0.000;
+  rgrftl_in_rgrfl.orientation.y = 0.000;
+  rgrftl_in_rgrfl.orientation.z = 0.001;
+  rgrftl_in_rgrfl.orientation.w = 1.000;
+
+  // r_gripper_l_finger_tip_link in r_gripper_l_finger_link
+  static geometry_msgs::Pose rglftl_in_rglfl;
+  rglftl_in_rglfl.position.x = 0.091;
+  rglftl_in_rglfl.position.y = 0.005;
+  rglftl_in_rglfl.position.z = 0.000;
+  rglftl_in_rglfl.orientation.x = 0.000;
+  rglftl_in_rglfl.orientation.y = 0.000;
+  rglftl_in_rglfl.orientation.z = -0.001;
+  rglftl_in_rglfl.orientation.w = 1.000;
+
+  // Open the gripper appropriately.
+  geometry_msgs::Pose open;
+  open.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, position);
+  multiply(rgrfl_in_rgp, open, rgrfl_in_rgp);
+  multiply(rglfl_in_rgp, open, rglfl_in_rgp);
+
+  open.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, -position);
+  multiply(rgrftl_in_rgrfl, open, rgrftl_in_rgrfl);
+  multiply(rglftl_in_rglfl, open, rglftl_in_rglfl);
+
+  geometry_msgs::Pose rgrftl_in_rgp;
+  multiply(rgrfl_in_rgp, rgrftl_in_rgrfl, rgrftl_in_rgp);
+  geometry_msgs::Pose rglftl_in_rgp;
+  multiply(rglfl_in_rgp, rglftl_in_rglfl, rglftl_in_rgp);
+
+  double r, g, b;
+  visualization_msgs::Marker m;
+  std::vector<geometry_msgs::Pose> p(4);
+  p[0] = rgrfl_in_rgp;
+  p[1] = rglfl_in_rgp;
+  p[2] = rgrftl_in_rgp;
+  p[3] = rglftl_in_rgp;
+
+  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = "/base_footprint";
+  m.ns = ns;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = 1.0;
+  m.scale.y = 1.0;
+  m.scale.z = 1.0;
+  m.color.r = r;
+  m.color.g = g;
+  m.color.b = b;
+  m.color.a = 1.0;
+
+  // palm
+  m.mesh_resource = arm_meshes_[9];
+  m.id = id;
+  m.pose = pose;
+  markers.push_back(m);
+
+  // upper_finger_r
+  m.mesh_resource = gripper_meshes_[0];
+  m.id++;
+  multiply(pose, p[0], m.pose);
+  markers.push_back(m);
+
+  // upper_finger_l
+  m.mesh_resource = gripper_meshes_[2];
+  m.id++;
+  multiply(pose, p[1], m.pose);
+  markers.push_back(m);
+
+  m.color.r = 90.0/255.0;
+  m.color.g = 90.0/255.0;
+  m.color.b = 90.0/255.0;
+
+  // finger_tip_r
+  m.mesh_resource = gripper_meshes_[1];
+  m.id++;
+  multiply(pose, p[2], m.pose);
+  markers.push_back(m);
+
+  // finger_tip_l
+  m.mesh_resource = gripper_meshes_[3];
+  m.id++;
+  multiply(pose, p[3], m.pose);
+  markers.push_back(m);
+}
+
 void PViz::multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, geometry_msgs::Pose &c)
 {
   tf::Transform bta, btb, btc;
@@ -1769,3 +1905,34 @@ void PViz::multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, 
   btc = bta * btb;
   tf::poseTFToMsg(btc, c);
 }
+
+void PViz::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)
+{
+  double r=0,g=0,b=0;
+  visualization_msgs::Marker marker;
+
+  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+
+  marker.header.stamp = ros::Time::now();
+  marker.header.frame_id = reference_frame_;
+  marker.ns = ns;
+  marker.id = id;
+  marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.scale.x = size;
+  marker.scale.y = size;
+  marker.scale.z = size;
+  marker.pose.position.x = x;
+  marker.pose.position.y = y;
+  marker.pose.position.z = z;
+  marker.pose.orientation.w = 1.0;
+
+  marker.color.r = r;
+  marker.color.g = g;
+  marker.color.b = b;
+  marker.color.a = 1.0;
+  marker.text = text;
+  marker.lifetime = ros::Duration(0.0);
+  marker_publisher_.publish(marker);
+}
+
