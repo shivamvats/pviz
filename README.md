@@ -3,8 +3,7 @@ pviz
 
 PR2 Visualization Library
 
-Written by Benjamin Cohen
-New features added by Ellis Ratner
+by Benjamin Cohen (with new features added by Ellis Ratner)
 
 A very easy to use library that allows you to visualize the PR2 robot in
 Rviz using visualization markers - with one line of code. It also has easy
@@ -15,7 +14,7 @@ PViz relies on the KDL for kinematics which means that TF and Gazebo are not
 needed.
 
 
-Visualization Functions:
+#### Visualization Functions:
 
   * visualizeRobot
   * visualizeRobotWithTitle
@@ -28,7 +27,7 @@ Visualization Functions:
   * visualizeLine
   * visualizeMesh
 
-Marker Functions:
+#### Marker Functions:
 
   * getRobotMarkerMsg
   * getRobotMeshesMarkerMsg
