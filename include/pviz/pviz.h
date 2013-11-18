@@ -153,6 +153,7 @@ class PViz
     std::vector<std::string> gripper_meshes_;
     std::vector<std::string> torso_meshes_;
     std::vector<std::string> base_meshes_;
+    std::vector<std::string> head_meshes_;
     std::vector<std::string> robot_meshes_;
 
     KDL::JntArray jnt_pos_in_;
@@ -162,6 +163,7 @@ class PViz
     KDL::Tree kdl_tree_;
     std::vector<KDL::ChainFkSolverPos_recursive *> fk_rsolver_;
     std::vector<KDL::ChainFkSolverPos_recursive *> fk_lsolver_;
+    KDL::ChainFkSolverPos_recursive * fk_hsolver_;
     std::string reference_frame_;
 
     /* \brief initialize the KDL chain for the robot arm */

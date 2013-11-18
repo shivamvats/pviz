@@ -105,12 +105,17 @@ PViz::PViz(const std::string &ns)
   // base meshes
   base_meshes_.push_back("package://pr2_description/meshes/base_v0/base.dae");
 
+  // head meshes
+  head_meshes_.push_back("package://pr2_description/meshes/head_v0/head_pan.dae");
+  head_meshes_.push_back("package://pr2_description/meshes/head_v0/head_tilt.dae");
+
   robot_meshes_.insert(robot_meshes_.end(),base_meshes_.begin(), base_meshes_.end());  // 1
   robot_meshes_.insert(robot_meshes_.end(),torso_meshes_.begin(), torso_meshes_.end()); // 1
   robot_meshes_.insert(robot_meshes_.end(),arm_meshes_.begin(), arm_meshes_.end());  // 10
   robot_meshes_.insert(robot_meshes_.end(),gripper_meshes_.begin(), gripper_meshes_.end());  // 4
   robot_meshes_.insert(robot_meshes_.end(),arm_meshes_.begin(), arm_meshes_.end());  // 10
   robot_meshes_.insert(robot_meshes_.end(),gripper_meshes_.begin(), gripper_meshes_.end());  // 4
+  robot_meshes_.insert(robot_meshes_.end(),head_meshes_.begin(), head_meshes_.end());  // 2
 
   if(!initKDLChain())
   {
@@ -204,10 +209,18 @@ bool PViz::initKDLChain()
 
   jnt_pos_in_.resize(chain_.getNrOfJoints());
   jnt_pos_out_.resize(chain_.getNrOfJoints());
-
   num_joints_ = chain_.getNrOfJoints();
-
   ROS_DEBUG("[pviz] jnt_pos_in: rows: %d cols: %d", jnt_pos_in_.rows(), jnt_pos_out_.columns());
+
+  // head (from base_footprint)
+  if (!kdl_tree_.getChain("base_footprint", "head_tilt_link", chain_))
+  {
+    ROS_ERROR("Error: could not fetch the KDL chain for the desired manipulator. Exiting."); 
+    return false;
+  }
+  fk_hsolver_ = new KDL::ChainFkSolverPos_recursive(chain_);
+  ROS_DEBUG("[pviz] the head chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
+  printKDLChain("head", chain_);
 
   return true;
 }
@@ -1289,9 +1302,9 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
       // right arm, right finger (to rotate the mesh)
       if(i == 13 || i == 12)
       {
-	geometry_msgs::Pose p;
-	p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
-	multiply(poses[i].pose, p, poses[i].pose);
+        geometry_msgs::Pose p;
+        p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
+        multiply(poses[i].pose, p, poses[i].pose);
       }
     }
     // right arm - left finger only
@@ -1302,15 +1315,15 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
     }
     // left arm thru the right finger
     else if(15 < i && i < 28)
-     {
+    {
       if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, LEFT, i-13, poses[i].pose))
         return false;
 
       if(i == 26 || i == 27)
       {
-	geometry_msgs::Pose p;
-	p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
-	multiply(poses[i].pose, p, poses[i].pose);
+        geometry_msgs::Pose p;
+        p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
+        multiply(poses[i].pose, p, poses[i].pose);
       }
     }
     // left arm - left finger only
@@ -1319,7 +1332,7 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
       if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, LEFT, -1*(i-15), poses[i].pose))
         return false;
     }
-   
+
     //ROS_INFO("pose: %d: %0.2f %0.2f %0.2f",i, poses[i].pose.position.x, poses[i].pose.position.y,poses[i].pose.position.z);
   }
 
