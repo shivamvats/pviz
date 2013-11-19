@@ -25,7 +25,7 @@
 #include <kdl/treefksolverpos_recursive.hpp>
 #include <pviz/body_pose.h>
 
-enum{ RIGHT, LEFT, HEAD };
+enum{ RIGHT, LEFT, HEAD, TILT};
 
 class PViz
 {
@@ -164,6 +164,7 @@ class PViz
     std::vector<KDL::ChainFkSolverPos_recursive *> fk_rsolver_;
     std::vector<KDL::ChainFkSolverPos_recursive *> fk_lsolver_;
     KDL::ChainFkSolverPos_recursive * fk_hsolver_;
+    KDL::ChainFkSolverPos_recursive * fk_tsolver_;
     std::string reference_frame_;
 
     /* \brief initialize the KDL chain for the robot arm */

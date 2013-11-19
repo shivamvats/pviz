@@ -108,6 +108,7 @@ PViz::PViz(const std::string &ns)
   // head meshes
   head_meshes_.push_back("package://pr2_description/meshes/head_v0/head_pan.dae");
   head_meshes_.push_back("package://pr2_description/meshes/head_v0/head_tilt.dae");
+  head_meshes_.push_back("package://pr2_description/meshes/tilting_laser_v0/tilting_hokuyo.dae");
 
   robot_meshes_.insert(robot_meshes_.end(),base_meshes_.begin(), base_meshes_.end());  // 1
   robot_meshes_.insert(robot_meshes_.end(),torso_meshes_.begin(), torso_meshes_.end()); // 1
@@ -115,7 +116,7 @@ PViz::PViz(const std::string &ns)
   robot_meshes_.insert(robot_meshes_.end(),gripper_meshes_.begin(), gripper_meshes_.end());  // 4
   robot_meshes_.insert(robot_meshes_.end(),arm_meshes_.begin(), arm_meshes_.end());  // 10
   robot_meshes_.insert(robot_meshes_.end(),gripper_meshes_.begin(), gripper_meshes_.end());  // 4
-  robot_meshes_.insert(robot_meshes_.end(),head_meshes_.begin(), head_meshes_.end());  // 2
+  robot_meshes_.insert(robot_meshes_.end(),head_meshes_.begin(), head_meshes_.end());  // 3
 
   if(!initKDLChain())
   {
@@ -220,7 +221,17 @@ bool PViz::initKDLChain()
   }
   fk_hsolver_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the head chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  printKDLChain("head", chain_);
+  //printKDLChain("head", chain_);
+
+  // tilt laser (from base_footprint)
+  if (!kdl_tree_.getChain("base_footprint", "laser_tilt_link", chain_))
+  {
+    ROS_ERROR("Error: could not fetch the KDL chain for the tilt laser. Exiting."); 
+    return false;
+  }
+  fk_tsolver_ = new KDL::ChainFkSolverPos_recursive(chain_);
+  ROS_DEBUG("[pviz] the tilt laser chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
+  printKDLChain("laser", chain_);
 
   return true;
 }
@@ -228,29 +239,38 @@ bool PViz::initKDLChain()
 bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<double> &base_pos, double torso_pos, int arm, int frame_num, geometry_msgs::Pose &pose)
 {
   KDL::Frame frame_out;
-  jnt_pos_in_(0) = torso_pos;
-  for(size_t i = 0; i < angles.size(); ++i)
-    jnt_pos_in_(i+1) = angles[i];
-
-  if(angles.size() == 7)
-  {
-    jnt_pos_in_(8) = 0;
-    jnt_pos_in_(9) = 0;
-  }
-  else if(angles.size() == 8)
-  {
-    jnt_pos_in_(9) = jnt_pos_in_(8);
-  }
 
   // head
-  if(arm > 1)
+  if(arm == HEAD)
   {
     KDL::JntArray head_pos_in;
     head_pos_in.resize(3);
     head_pos_in(0) = torso_pos;
-    head_pos_in(1) = torso_pos;
-    head_pos_in(2) = 0;
+    head_pos_in(1) = 0; // pan
+    head_pos_in(2) = 0; // tilt
+    if(base_pos.size() > 3)
+    {
+      head_pos_in(1) = base_pos[3]; // pan
+      if(base_pos.size() > 4)
+        head_pos_in(2) = base_pos[4]; // tilt
+    }
+
     if(fk_hsolver_->JntToCart(head_pos_in, frame_out, frame_num) < 0)
+    {
+      ROS_ERROR("JntToCart returned < 0. Exiting. (arm: %d  frame: %d)", arm, frame_num);
+      return false;
+    }
+  }
+  else if(arm == TILT) // tilt laser
+  {
+    KDL::JntArray tilt_pos_in;
+    tilt_pos_in.resize(2);
+    tilt_pos_in(0) = torso_pos;
+    tilt_pos_in(1) = 0;
+    if(base_pos.size() > 5)
+      tilt_pos_in(1) = base_pos[5]; // tilt mount
+
+    if(fk_tsolver_->JntToCart(tilt_pos_in, frame_out, frame_num) < 0)
     {
       ROS_ERROR("JntToCart returned < 0. Exiting. (arm: %d  frame: %d)", arm, frame_num);
       return false;
@@ -258,6 +278,20 @@ bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<doubl
   }
   else // body
   {
+    jnt_pos_in_(0) = torso_pos;
+    for(size_t i = 0; i < angles.size(); ++i)
+      jnt_pos_in_(i+1) = angles[i];
+
+    if(angles.size() == 7)
+    {
+      jnt_pos_in_(8) = 0;
+      jnt_pos_in_(9) = 0;
+    }
+    else if(angles.size() == 8)
+    {
+      jnt_pos_in_(9) = jnt_pos_in_(8);
+    }
+
     // a negative frame number means that frame is in the left finger chain
     if(frame_num > 0)
     {
@@ -1346,13 +1380,18 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
       if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, LEFT, -1*(i-15), poses[i].pose))
         return false;
     }
-    else /* if(29 < i) */
+    // head pan, head tilt
+    else if(29 < i && i < 32)
     {
-      if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, HEAD, i-29, poses[i].pose))
+      if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, HEAD, i-27, poses[i].pose))
         return false;
     }
-
-    //ROS_INFO("pose: %d: %0.2f %0.2f %0.2f",i, poses[i].pose.position.x, poses[i].pose.position.y,poses[i].pose.position.z);
+    // tilt laser
+    else if(31 < i)
+    {
+      if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, TILT, i-29, poses[i].pose))
+        return false;
+    }
   }
 
   return true;
