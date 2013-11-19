@@ -241,25 +241,39 @@ bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<doubl
   {
     jnt_pos_in_(9) = jnt_pos_in_(8);
   }
-  //ROS_WARN("jnt_pos_in:"); 
-  //for(int i = 0; i < jnt_pos_in_.rows(); ++i)
-  //  ROS_WARN("%d: %0.3f", i, jnt_pos_in_(i));
 
-  // a negative frame number means that frame is in the left finger chain
-  if(frame_num > 0)
+  // head
+  if(arm > 1)
   {
-    if(fk_rsolver_[arm]->JntToCart(jnt_pos_in_, frame_out, frame_num) < 0)
+    KDL::JntArray head_pos_in;
+    head_pos_in.resize(3);
+    head_pos_in(0) = torso_pos;
+    head_pos_in(1) = torso_pos;
+    head_pos_in(2) = 0;
+    if(fk_hsolver_->JntToCart(head_pos_in, frame_out, frame_num) < 0)
     {
-      ROS_ERROR("JntToCart returned < 0. Exiting.");
+      ROS_ERROR("JntToCart returned < 0. Exiting. (arm: %d  frame: %d)", arm, frame_num);
       return false;
     }
   }
-  else
+  else // body
   {
-    if(fk_lsolver_[arm]->JntToCart(jnt_pos_in_, frame_out, -1*frame_num) < 0)
+    // a negative frame number means that frame is in the left finger chain
+    if(frame_num > 0)
     {
-      ROS_ERROR("JntToCart returned < 0. Exiting.");
-      return false;
+      if(fk_rsolver_[arm]->JntToCart(jnt_pos_in_, frame_out, frame_num) < 0)
+      {
+        ROS_ERROR("JntToCart returned < 0. Exiting. (arm: %d  frame: %d)", arm, frame_num);
+        return false;
+      }
+    }
+    else
+    {
+      if(fk_lsolver_[arm]->JntToCart(jnt_pos_in_, frame_out, -1*frame_num) < 0)
+      {
+        ROS_ERROR("JntToCart returned < 0. Exiting. (arm: %d  frame: %d)", arm, frame_num);
+        return false;
+      }
     }
   }
 
@@ -1327,9 +1341,14 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
       }
     }
     // left arm - left finger only
-    else /* if(27 < i) */
+    else if(27 < i && i < 30) 
     {
       if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, LEFT, -1*(i-15), poses[i].pose))
+        return false;
+    }
+    else /* if(29 < i) */
+    {
+      if(!computeFKwithKDL(jnt1_pos, base_pos, torso_pos, HEAD, i-29, poses[i].pose))
         return false;
     }
 

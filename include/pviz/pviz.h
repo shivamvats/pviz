@@ -25,7 +25,7 @@
 #include <kdl/treefksolverpos_recursive.hpp>
 #include <pviz/body_pose.h>
 
-enum{ RIGHT, LEFT };
+enum{ RIGHT, LEFT, HEAD };
 
 class PViz
 {
