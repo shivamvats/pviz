@@ -38,7 +38,7 @@ int main(int argc, char** argv)
   printf("Getting Param");
   ph.param<std::string>("trajectory_filename",filename, "");
   sleep(1);
-  printf("Filename: %s", filename.c_str());
+  printf("Filename: %s\n", filename.c_str());
 
   pviz.visualizeTrajectoryFromFile(filename, true);
   ros::spinOnce();

@@ -231,7 +231,7 @@ bool PViz::initKDLChain()
   }
   fk_tsolver_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the tilt laser chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  printKDLChain("laser", chain_);
+  //printKDLChain("laser", chain_);
 
   return true;
 }
@@ -337,7 +337,7 @@ void PViz::visualizeObstacles(const std::vector<std::vector<double> > &obstacles
   {
     if(obstacles[i].size() < 6)
     {
-      ROS_INFO("[pviz] Obstacle description doesn't have length = 6");
+      ROS_WARN("[pviz] Obstacle description doesn't have length = 6");
       continue;
     }
 
@@ -368,7 +368,7 @@ void PViz::getCubeMsg(std::vector<double> &cube, std::vector<double> &color, std
 {
   if(cube.size() < 6)
   {
-    ROS_INFO("[pviz] Three dimensions are needed to visualize a cube.");
+    ROS_WARN("[pviz] Three dimensions are needed to visualize a cube.");
     return;
   }
   if(color.size() < 4)
@@ -407,7 +407,7 @@ void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::
 {
   if(dim.size() < 3)
   {
-    ROS_INFO("[pviz] Three dimensions are needed to visualize a cube.");
+    ROS_WARN("[pviz] Three dimensions are needed to visualize a cube.");
     return;
   }
   if(color.size() < 4)
@@ -1434,11 +1434,8 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
       marker_array_.markers[i].color.a = 0.4;
     }
     marker_array_.markers[i].lifetime = ros::Duration(120.0);
-
-    //ROS_INFO("i=%d",i);
     marker_array_.markers[i].mesh_resource = robot_meshes_[i];
   }
-
   marker_array_publisher_.publish(marker_array_);
 }
 
