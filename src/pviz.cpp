@@ -358,7 +358,7 @@ void PViz::visualizeObstacles(const std::vector<std::vector<double> > &obstacles
     marker_array_.markers[i].color.g = 0.0;
     marker_array_.markers[i].color.b = 0.5;
     marker_array_.markers[i].color.a = 0.9;
-    marker_array_.markers[i].lifetime = ros::Duration(180.0);
+    marker_array_.markers[i].lifetime = ros::Duration(0.0);
   }
 
   marker_array_publisher_.publish(marker_array_);
@@ -400,7 +400,7 @@ void PViz::getCubeMsg(std::vector<double> &cube, std::vector<double> &color, std
   marker.color.g = color[1];
   marker.color.b = color[2];
   marker.color.a = color[3];
-  marker.lifetime = ros::Duration(1000.0);
+  marker.lifetime = ros::Duration(0.0);
 }
 
 void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::vector<double> &color, std::string ns, int id, visualization_msgs::Marker& marker)
@@ -436,7 +436,7 @@ void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::
   marker.color.g = color[1];
   marker.color.b = color[2];
   marker.color.a = color[3];
-  marker.lifetime = ros::Duration(1000.0);
+  marker.lifetime = ros::Duration(0.0);
 }
 
 void PViz::publishMarker(visualization_msgs::Marker& marker)
@@ -484,7 +484,7 @@ void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
     marker_array_.markers[mind].color.g = 0.7;
     marker_array_.markers[mind].color.b = 0.6;
     marker_array_.markers[mind].color.a = 0.7;
-    marker_array_.markers[mind].lifetime = ros::Duration(600.0);
+    marker_array_.markers[mind].lifetime = ros::Duration(0.0);
 
     mind++;
     marker_array_.markers[mind].header.stamp = time;
@@ -504,7 +504,7 @@ void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
     marker_array_.markers[mind].color.g = 0.0;
     marker_array_.markers[mind].color.b = 0.6;
     marker_array_.markers[mind].color.a = 0.8;
-    marker_array_.markers[mind].lifetime = ros::Duration(600.0);
+    marker_array_.markers[mind].lifetime = ros::Duration(0.0);
 
     mind++;
     marker_array_.markers[mind].header.stamp = time;
@@ -524,7 +524,7 @@ void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
     marker_array_.markers[mind].color.b = 1.0;
     marker_array_.markers[mind].color.a = 0.95;
     marker_array_.markers[mind].text = boost::lexical_cast<std::string>(i+1);
-    marker_array_.markers[mind].lifetime = ros::Duration(600.0);
+    marker_array_.markers[mind].lifetime = ros::Duration(0.0);
   }
 
   ROS_DEBUG("[pviz] %d markers in the array",(int)marker_array_.markers.size());
@@ -1106,7 +1106,7 @@ void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string
   marker.color.b = b;
   marker.color.a = 1.0;
   marker.text = text;
-  marker.lifetime = ros::Duration(10.0);
+  marker.lifetime = ros::Duration(0.0);
 
   marker_publisher_.publish(marker);
 }
@@ -1134,7 +1134,7 @@ void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string
   marker.color.b = color[2];
   marker.color.a = color[3];
   marker.text = text;
-  marker.lifetime = ros::Duration(360.0);
+  marker.lifetime = ros::Duration(0.0);
 
   marker_publisher_.publish(marker);
 }
@@ -1653,7 +1653,7 @@ void PViz::visualizeRobotWithTitle(std::vector<double> &jnt0_pos, std::vector<do
   marker.color.b = b;
   marker.color.a = 1.5;
   marker.text = title;
-  marker.lifetime = ros::Duration(180.0);
+  marker.lifetime = ros::Duration(0.0);
   marker_publisher_.publish(marker);
 }
 
