@@ -439,6 +439,16 @@ void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::
   marker.lifetime = ros::Duration(0.0);
 }
 
+void PViz::publish(const visualization_msgs::Marker& marker)
+{
+  marker_publisher_.publish(marker);
+}
+
+void PViz::publish(const visualization_msgs::MarkerArray &marker_array)
+{
+  marker_array_publisher_.publish(marker_array);
+}
+
 void PViz::publishMarker(visualization_msgs::Marker& marker)
 {
   marker_publisher_.publish(marker);
@@ -447,7 +457,6 @@ void PViz::publishMarker(visualization_msgs::Marker& marker)
 void PViz::publishMarkerArray(visualization_msgs::MarkerArray &marker_array)
 {
   marker_array_publisher_.publish(marker_array);
-  usleep(1000);
 }
 
 void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)

@@ -44,6 +44,10 @@ class PViz
 
     void getMaptoRobotTransform(double x, double y, double theta, KDL::Frame &frame);
 
+    void publish(const visualization_msgs::Marker& marker);
+
+    void publish(const visualization_msgs::MarkerArray &marker_array);
+
     void publishMarker(visualization_msgs::Marker& marker);
 
     void publishMarkerArray(visualization_msgs::MarkerArray &marker_array);
