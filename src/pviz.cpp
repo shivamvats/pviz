@@ -1666,7 +1666,7 @@ void PViz::visualizeRobotWithTitle(std::vector<double> &jnt0_pos, std::vector<do
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle)
+void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle, std::string ns, int id)
 {
   int length = rpath.size();
   std::vector<double> rangles(7, 0), langles(7, 0);
@@ -1697,7 +1697,7 @@ void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint
     ROS_DEBUG("[pviz] length: %d color_inc: %d throttle: %d", length, color_inc, throttle);
     ROS_DEBUG("[pviz] Visualizing waypoint #%d (i mod color_inc: %d) with color: %d (color_inc: %d, throttle: %d)", i, (i / throttle), (i / throttle) * color_inc, color_inc, throttle);
 
-    ma1 = getRobotMarkerMsg(rangles, langles, body_pos, (i / throttle) * color_inc, "robot_path", (i+1)*30);
+    ma1 = getRobotMarkerMsg(rangles, langles, body_pos, (i / throttle) * color_inc, ns, id+(i+1)*30);
     ma.markers.insert(ma.markers.end(), ma1.markers.begin(), ma1.markers.end()); 
   }
   ROS_INFO("[pviz] Visualizing a robot path with %d waypoints. (throttle = %d)", int(rpath.size()), throttle);

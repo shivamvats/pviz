@@ -66,7 +66,7 @@ class PViz
  
     bool visualizeTrajectoryFromFile(std::string filename, bool use_embedded_materials = false);
 
-    void visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle);
+    void visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle, std::string ns="robot_path", int id=0);
 
     void visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open);
     /**************** Shapes, Text & Lines ****************/
