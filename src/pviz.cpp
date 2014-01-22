@@ -2,10 +2,10 @@
 
 #include <pviz/pviz.h>
 
-static std::string RIGHT_CHAIN_RTIP_NAME = "r_gripper_r_finger_tip_link";
-static std::string RIGHT_CHAIN_LTIP_NAME = "r_gripper_l_finger_tip_link";
-static std::string LEFT_CHAIN_RTIP_NAME = "l_gripper_r_finger_tip_link";
-static std::string LEFT_CHAIN_LTIP_NAME = "l_gripper_l_finger_tip_link";
+static std::string RIGHT_CHAIN_RTIP_NAME = "arm0_gripper_r_finger_tip_link";
+static std::string RIGHT_CHAIN_LTIP_NAME = "arm0_gripper_l_finger_tip_link";
+static std::string LEFT_CHAIN_RTIP_NAME = "arm1_gripper_r_finger_tip_link";
+static std::string LEFT_CHAIN_LTIP_NAME = "arm1_gripper_l_finger_tip_link";
 
 void HSVtoRGB( double *r, double *g, double *b, double h, double s, double v )
 {
@@ -120,7 +120,7 @@ PViz::PViz(const std::string &ns)
 
   if(!initKDLChain())
   {
-    ROS_ERROR("[pviz] Failed to initiliaze the KDL chain. This should exit but instead it will crash."); 
+    ROS_ERROR("[pviz] Failed to initiliaze the KDL chains. This should exit but instead it will crash the first time you try to visualize anything."); 
     fflush(stdout);
   }
 
@@ -239,6 +239,12 @@ bool PViz::initKDLChain()
 bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<double> &base_pos, double torso_pos, int arm, int frame_num, geometry_msgs::Pose &pose)
 {
   KDL::Frame frame_out;
+
+  if(angles.size() > 8)
+  {
+    ROS_ERROR("Expected angles vector to have a max length of 8. KDL will crash so not computing FK.");
+    return false;
+  }
 
   // head
   if(arm == HEAD)
@@ -1489,6 +1495,57 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   return marker_array_;
 }
 
+visualization_msgs::MarkerArray PViz::getRobotArmMeshesMarkerMsg(int arm_id, double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials)
+{
+  int cntr = 0;
+  double r,g,b;
+  marker_array_.markers.clear();
+  marker_array_.markers.resize(14);
+  ros::Time time = ros::Time();
+  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  
+  // defaults are for right arm
+  int i_min = 2, i_max = 16;
+  if(arm_id == LEFT)
+  {
+    i_min = 16;
+    i_max= 30;
+  }
+
+  for(int i = i_min; i < i_max; ++i)
+  {
+    marker_array_.markers[cntr].header.stamp = time;
+    marker_array_.markers[cntr].header.frame_id = reference_frame_;
+    marker_array_.markers[cntr].ns = ns;
+    marker_array_.markers[cntr].type = visualization_msgs::Marker::MESH_RESOURCE;
+    marker_array_.markers[cntr].id = id + cntr;
+    marker_array_.markers[cntr].action = visualization_msgs::Marker::ADD;
+    marker_array_.markers[cntr].pose = poses.at(i).pose;
+    marker_array_.markers[cntr].scale.x = 1.0;
+    marker_array_.markers[cntr].scale.y = 1.0;
+    marker_array_.markers[cntr].scale.z = 1.0;
+    if(use_embedded_materials)
+    {
+      marker_array_.markers[cntr].color.r = 0;
+      marker_array_.markers[cntr].color.g = 0;
+      marker_array_.markers[cntr].color.b = 0;
+      marker_array_.markers[cntr].color.a = 0;
+      marker_array_.markers[cntr].mesh_use_embedded_materials = true;
+    }
+    else
+    {
+      marker_array_.markers[cntr].color.r = r;
+      marker_array_.markers[cntr].color.g = g;
+      marker_array_.markers[cntr].color.b = b;
+      marker_array_.markers[cntr].color.a = 0.4;
+    }
+    marker_array_.markers[cntr].lifetime = ros::Duration(0.0);
+    marker_array_.markers[cntr].mesh_resource = robot_meshes_[i];
+    cntr++;
+  }
+  return marker_array_;
+}
+
 void PViz::getMaptoRobotTransform(double x, double y, double theta, KDL::Frame &frame)
 {
   KDL::Rotation r1;
@@ -1544,6 +1601,46 @@ visualization_msgs::MarkerArray PViz::getRobotMarkerMsg(std::vector<double> &jnt
   } 
   else
     return getRobotMeshesMarkerMsg(hue, ns, id, poses, use_embedded_materials);
+}
+
+visualization_msgs::MarkerArray PViz::getRightArmMarkerMsg(std::vector<double> &jnt0_pos, double x, double y, double z, double theta, double hue, std::string ns, int id, bool use_embedded_materials)
+{
+  double torso_pos;
+  std::vector<double> base_pos(3,0);
+  std::vector<double> jnt1_pos(7,0);
+  base_pos[0] = x;
+  base_pos[1] = y;
+  base_pos[2] = theta;
+  torso_pos = z;
+
+  std::vector<geometry_msgs::PoseStamped> poses;
+  if(!computeFKforVisualizationWithKDL(jnt0_pos, jnt1_pos, base_pos, torso_pos, poses))
+  {
+    ROS_WARN("[pviz] Failed to compute forward kinematics. Cannot visualize robot.");
+    return visualization_msgs::MarkerArray();
+  } 
+  else
+    return getRobotArmMeshesMarkerMsg(RIGHT, hue, ns, id, poses, use_embedded_materials);
+}
+
+visualization_msgs::MarkerArray PViz::getLeftArmMarkerMsg(std::vector<double> &jnt0_pos, double x, double y, double z, double theta, double hue, std::string ns, int id, bool use_embedded_materials)
+{
+  double torso_pos;
+  std::vector<double> base_pos(3,0);
+  std::vector<double> jnt1_pos(7,0);
+  base_pos[0] = x;
+  base_pos[1] = y;
+  base_pos[2] = theta;
+  torso_pos = z;
+
+  std::vector<geometry_msgs::PoseStamped> poses;
+  if(!computeFKforVisualizationWithKDL(jnt1_pos, jnt0_pos, base_pos, torso_pos, poses)) // input is for left arm
+  {
+    ROS_WARN("[pviz] Failed to compute forward kinematics. Cannot visualize robot.");
+    return visualization_msgs::MarkerArray();
+  } 
+  else
+    return getRobotArmMeshesMarkerMsg(LEFT, hue, ns, id, poses, use_embedded_materials);
 }
 
 bool PViz::parseCSVFile(std::string filename, int num_cols, std::vector<std::vector<double> > &data)
@@ -1934,7 +2031,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   m.color.r = r;
   m.color.g = g;
   m.color.b = b;
-  m.color.a = 1.0;
+  m.color.a = 0.6;
 
   // palm
   m.mesh_resource = arm_meshes_[9];
