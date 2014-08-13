@@ -36,7 +36,7 @@ class PViz
 
     ~PViz();
 
-    /* \brief set reference frame of visualization markers */
+    /* \brief set reference frame of all visualization markers */
     void setReferenceFrame(std::string frame) {reference_frame_ = frame;};
     
     /* \brief get reference frame used for the visualizations */
@@ -47,10 +47,6 @@ class PViz
     void publish(const visualization_msgs::Marker& marker);
 
     void publish(const visualization_msgs::MarkerArray &marker_array);
-
-    void publishMarker(visualization_msgs::Marker& marker);
-
-    void publishMarkerArray(visualization_msgs::MarkerArray &marker_array);
 
     void deleteVisualizations(std::string ns, int max_id);
 
@@ -69,14 +65,19 @@ class PViz
     void visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle, std::string ns="robot_path", int id=0);
 
     void visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open);
+
     /**************** Shapes, Text & Lines ****************/
 
     /* \brief visualize a pose (sphere, arrow, string of text) */
     void visualizePose(const std::vector<double> &pose, std::string text);
 
+    /* \brief visualize a pose (sphere, arrow, string of text) */
     void visualizePose(const geometry_msgs::Pose &pose, std::string text);
 
+    /* \brief visualize a pose (sphere, arrow, string of text) */
     void visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id);
+
+    visualization_msgs::MarkerArray getPoseMarkerMsg(const geometry_msgs::Pose &pose, double radius, double arrow_length, double arrow_width, double hue, double alpha, std::string ns, int id);
 
     /* \brief visualize a list of poses (sphere, arrow, pose index number) */
     void visualizePoses(const std::vector<std::vector<double> > &poses);
@@ -86,16 +87,19 @@ class PViz
    
     void visualize3DPath(std::vector<std::vector<double> > &dpath);
 
-     /* \brief display a sphere */
+     /* \brief visualize a sphere */
     void visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id);
 
+     /* \brief visualize a sphere */
     void visualizeSphere(std::vector<double> pose, int color, std::string text, double radius);
     
     /* \brief display a list of spheres of the same radius and color */
     void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, double radius);
 
+    /* \brief display a list of spheres of the same color with different radii */
     void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, std::vector<double> &radius);
  
+    /* \brief display a list of spheres of the same radius and color (radii are 4th element in pose vector) */
     void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text);
     
     void visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string text);
