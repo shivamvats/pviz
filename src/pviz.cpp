@@ -280,42 +280,16 @@ bool PViz::computeFKwithKDL(const std::vector<double> &angles, std::vector<doubl
 
 void PViz::visualizeObstacles(const std::vector<std::vector<double> > &obstacles)
 {
-  marker_array_.markers.clear();
-  marker_array_.markers.resize(obstacles.size());
+  visualization_msgs::MarkerArray ma;
+  ma.markers.resize(obstacles.size());
+  std::vector<double> color(4,0);
+  color[2] = 0.5; // light blue
+  color[3] = 0.9;
 
-  ROS_INFO("[pviz] Displaying %d obstaclesin the %s frame", (int)obstacles.size(), reference_frame_.c_str());
-
-  std::string ns = "obstacles"+boost::lexical_cast<std::string>(rand());
-
-  for(int i = 0; i < int(obstacles.size()); i++)
-  {
-    if(obstacles[i].size() < 6)
-    {
-      ROS_WARN("[pviz] Obstacle description doesn't have length = 6");
-      continue;
-    }
-
-    //TODO: Change this to use a CUBE_LIST
-    marker_array_.markers[i].header.stamp = ros::Time::now();
-    marker_array_.markers[i].header.frame_id = reference_frame_;
-    marker_array_.markers[i].ns = ns;
-    marker_array_.markers[i].id = rand();
-    marker_array_.markers[i].type = visualization_msgs::Marker::CUBE;
-    marker_array_.markers[i].action = visualization_msgs::Marker::ADD;
-    marker_array_.markers[i].pose.position.x = obstacles[i][0];
-    marker_array_.markers[i].pose.position.y = obstacles[i][1];
-    marker_array_.markers[i].pose.position.z = obstacles[i][2];
-    marker_array_.markers[i].scale.x = obstacles[i][3];
-    marker_array_.markers[i].scale.y = obstacles[i][4];
-    marker_array_.markers[i].scale.z = obstacles[i][5];
-    marker_array_.markers[i].color.r = 0.0;
-    marker_array_.markers[i].color.g = 0.0;
-    marker_array_.markers[i].color.b = 0.5;
-    marker_array_.markers[i].color.a = 0.9;
-    marker_array_.markers[i].lifetime = ros::Duration(0.0);
-  }
-
-  marker_array_publisher_.publish(marker_array_);
+  for(size_t i = 0; i < obstacles.size(); ++i)
+    ma.markers[i] = viz::getCubeMarker(obstacles[i], color, reference_frame_, "obstacles", i);
+  
+  publish(ma);
 }
 
 void PViz::getCubeMsg(std::vector<double> &cube, std::vector<double> &color, std::string ns, int id, visualization_msgs::Marker& marker)
