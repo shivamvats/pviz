@@ -1,60 +1,14 @@
 /* \author Ben Cohen */
 
 #include <pviz/pviz.h>
+#include <leatherman/viz.h>
+#include <leatherman/utils.h>
+#include <leatherman/print.h>
 
 static std::string RIGHT_CHAIN_RTIP_NAME = "r_gripper_r_finger_tip_link";
 static std::string RIGHT_CHAIN_LTIP_NAME = "r_gripper_l_finger_tip_link";
 static std::string LEFT_CHAIN_RTIP_NAME = "l_gripper_r_finger_tip_link";
 static std::string LEFT_CHAIN_LTIP_NAME = "l_gripper_l_finger_tip_link";
-
-void HSVtoRGB( double *r, double *g, double *b, double h, double s, double v )
-{
-	int i;
-	double f, p, q, t;
-	if( s == 0 ) {
-		// achromatic (grey)
-		*r = *g = *b = v;
-		return;
-	}
-	h /= 60;        // sector 0 to 5
-	i = floor(h);
-	f = h - i;			// factorial part of h
-	p = v * ( 1 - s );
-	q = v * ( 1 - s * f );
-	t = v * ( 1 - s * ( 1 - f ) );
-	switch( i ) {
-		case 0:
-			*r = v;
-			*g = t;
-			*b = p;
-			break;
-		case 1:
-			*r = q;
-			*g = v;
-			*b = p;
-			break;
-		case 2:
-			*r = p;
-			*g = v;
-			*b = t;
-			break;
-		case 3:
-			*r = p;
-			*g = q;
-			*b = v;
-			break;
-		case 4:
-			*r = t;
-			*g = p;
-			*b = v;
-			break;
-    default:
-			*r = v;
-			*g = p;
-			*b = q;
-			break;
-	}
-}
 
 PViz::PViz(const std::string &ns)
 {
@@ -176,7 +130,7 @@ bool PViz::initKDLChain()
   }
   fk_rsolver_[RIGHT] = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the right arm-right finger chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  //printKDLChain("right arm - right finger", chain_);
+  //leatherman::printKDLChain("right arm - right finger", chain_);
 
   // right arm - left finger (from base_footprint)
   if (!kdl_tree_.getChain("base_footprint", RIGHT_CHAIN_LTIP_NAME, chain_))
@@ -186,7 +140,7 @@ bool PViz::initKDLChain()
   }
   fk_lsolver_[RIGHT] = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the right arm-left finger chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  //printKDLChain("right arm - left finger", chain_);
+  //leatherman::printKDLChain("right arm - left finger", chain_);
 
   // left arm - right finger (from base_footprint)
   if (!kdl_tree_.getChain("base_footprint", LEFT_CHAIN_RTIP_NAME, chain_))
@@ -196,7 +150,7 @@ bool PViz::initKDLChain()
   }
   fk_rsolver_[LEFT] = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the left arm-right finger chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  //printKDLChain("left arm - right finger", chain_);
+  //leatherman::printKDLChain("left arm - right finger", chain_);
 
   // left arm - left finger (from base_footprint)
   if (!kdl_tree_.getChain("base_footprint", LEFT_CHAIN_LTIP_NAME, chain_))
@@ -206,7 +160,7 @@ bool PViz::initKDLChain()
   }
   fk_lsolver_[LEFT] = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the left arm-right finger chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  //printKDLChain("left arm - left finger", chain_);
+  //leatherman::printKDLChain("left arm - left finger", chain_);
 
   jnt_pos_in_.resize(chain_.getNrOfJoints());
   jnt_pos_out_.resize(chain_.getNrOfJoints());
@@ -221,7 +175,7 @@ bool PViz::initKDLChain()
   }
   fk_hsolver_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the head chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  //printKDLChain("head", chain_);
+  //leatherman::printKDLChain("head", chain_);
 
   // tilt laser (from base_footprint)
   if (!kdl_tree_.getChain("base_footprint", "laser_tilt_link", chain_))
@@ -231,7 +185,7 @@ bool PViz::initKDLChain()
   }
   fk_tsolver_ = new KDL::ChainFkSolverPos_recursive(chain_);
   ROS_DEBUG("[pviz] the tilt laser chain has %d segments with %d joints", chain_.getNrOfSegments(), chain_.getNrOfJoints());
-  //printKDLChain("laser", chain_);
+  //leatherman::printKDLChain("laser", chain_);
 
   return true;
 }
@@ -366,77 +320,12 @@ void PViz::visualizeObstacles(const std::vector<std::vector<double> > &obstacles
 
 void PViz::getCubeMsg(std::vector<double> &cube, std::vector<double> &color, std::string ns, int id, visualization_msgs::Marker& marker)
 {
-  if(cube.size() < 6)
-  {
-    ROS_WARN("[pviz] Three dimensions are needed to visualize a cube.");
-    return;
-  }
-  if(color.size() < 4)
-  {
-    ROS_ERROR("[pviz] No color specified.");
-    return;
-  }
-
-  for(size_t i = 0; i < color.size(); ++i)
-  {
-    if(color[i] > 1)
-      color[i] = color[i] / 255.0;
-  }
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = "base_footprint";
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::CUBE;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position.x = cube[0];
-  marker.pose.position.y= cube[1];
-  marker.pose.position.z = cube[2];
-  marker.pose.orientation.w = 1;
-  marker.scale.x = cube[3];
-  marker.scale.y = cube[4];
-  marker.scale.z = cube[5];
-  marker.color.r = color[0];
-  marker.color.g = color[1];
-  marker.color.b = color[2];
-  marker.color.a = color[3];
-  marker.lifetime = ros::Duration(0.0);
+  marker = viz::getCubeMarker(cube, color, reference_frame_, ns, id);
 }
 
 void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::vector<double> &color, std::string ns, int id, visualization_msgs::Marker& marker)
 {
-  if(dim.size() < 3)
-  {
-    ROS_WARN("[pviz] Three dimensions are needed to visualize a cube.");
-    return;
-  }
-  if(color.size() < 4)
-  {
-    ROS_ERROR("[pviz] No color specified.");
-    return;
-  }
-
-  for(size_t i = 0; i < color.size(); ++i)
-  {
-    if(color[i] > 1)
-      color[i] = color[i] / 255.0;
-  }
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = "base_footprint";
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::CUBE;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.pose = pose;
-  marker.scale.x = dim[0];
-  marker.scale.y = dim[1];
-  marker.scale.z = dim[2];
-  marker.color.r = color[0];
-  marker.color.g = color[1];
-  marker.color.b = color[2];
-  marker.color.a = color[3];
-  marker.lifetime = ros::Duration(0.0);
+  marker = viz::getCubeMarker(pose, dim, color, reference_frame_, ns, id);
 }
 
 void PViz::publish(const visualization_msgs::Marker& marker)
@@ -451,83 +340,8 @@ void PViz::publish(const visualization_msgs::MarkerArray &marker_array)
 
 void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
 {
-  marker_array_.markers.clear();
-  marker_array_.markers.resize(poses.size()*3);
-  tf::Quaternion pose_quaternion;
-  geometry_msgs::Quaternion quaternion_msg;
-
-  int mind = -1;
-
-  ros::Time time = ros::Time::now();
-
-  for(int i = 0; i < (int)poses.size(); ++i)
-  {
-    pose_quaternion.setRPY(poses[i][3],poses[i][4],poses[i][5]);
-    tf::quaternionTFToMsg(pose_quaternion, quaternion_msg);
-
-    mind++;
-    marker_array_.markers[mind].header.stamp = time;
-    marker_array_.markers[mind].header.frame_id = reference_frame_;
-    marker_array_.markers[mind].ns = "pose_arrows";
-    marker_array_.markers[mind].type = visualization_msgs::Marker::ARROW;
-    marker_array_.markers[mind].id = i;
-    marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-    marker_array_.markers[mind].pose.position.x = poses[i][0];
-    marker_array_.markers[mind].pose.position.y = poses[i][1];
-    marker_array_.markers[mind].pose.position.z = poses[i][2];
-    marker_array_.markers[mind].pose.orientation = quaternion_msg;
-    marker_array_.markers[mind].scale.x = 0.1;
-    marker_array_.markers[mind].scale.y = 0.015;
-    marker_array_.markers[mind].scale.z = 0.015;
-    marker_array_.markers[mind].color.r = 0.0;
-    marker_array_.markers[mind].color.g = 0.7;
-    marker_array_.markers[mind].color.b = 0.6;
-    marker_array_.markers[mind].color.a = 0.7;
-    marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-    mind++;
-    marker_array_.markers[mind].header.stamp = time;
-    marker_array_.markers[mind].header.frame_id = reference_frame_;
-    marker_array_.markers[mind].ns = "pose_spheres";
-    marker_array_.markers[mind].id = i;
-    marker_array_.markers[mind].type = visualization_msgs::Marker::SPHERE;
-    marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-    marker_array_.markers[mind].pose.position.x = poses[i][0];
-    marker_array_.markers[mind].pose.position.y = poses[i][1];
-    marker_array_.markers[mind].pose.position.z = poses[i][2];
-    marker_array_.markers[mind].pose.orientation = quaternion_msg;
-    marker_array_.markers[mind].scale.x = 0.07;
-    marker_array_.markers[mind].scale.y = 0.07;
-    marker_array_.markers[mind].scale.z = 0.07;
-    marker_array_.markers[mind].color.r = 1.0;
-    marker_array_.markers[mind].color.g = 0.0;
-    marker_array_.markers[mind].color.b = 0.6;
-    marker_array_.markers[mind].color.a = 0.8;
-    marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-    mind++;
-    marker_array_.markers[mind].header.stamp = time;
-    marker_array_.markers[mind].header.frame_id = reference_frame_;
-    marker_array_.markers[mind].ns = "pose_text_blocks";
-    marker_array_.markers[mind].id = i;
-    marker_array_.markers[mind].type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-    marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-    marker_array_.markers[mind].pose.position.x = poses[i][0];
-    marker_array_.markers[mind].pose.position.y = poses[i][1];
-    marker_array_.markers[mind].pose.position.z = poses[i][2];
-    marker_array_.markers[mind].scale.x = 0.015; //0.3
-    marker_array_.markers[mind].scale.y = 0.015;
-    marker_array_.markers[mind].scale.z = 0.015;
-    marker_array_.markers[mind].color.r = 1.0;
-    marker_array_.markers[mind].color.g = 1.0;
-    marker_array_.markers[mind].color.b = 1.0;
-    marker_array_.markers[mind].color.a = 0.95;
-    marker_array_.markers[mind].text = boost::lexical_cast<std::string>(i+1);
-    marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-  }
-
-  ROS_DEBUG("[pviz] %d markers in the array",(int)marker_array_.markers.size());
-  marker_array_publisher_.publish(marker_array_);
+  visualization_msgs::MarkerArray ma = viz::getPosesMarkerArray(poses, reference_frame_, "poses", 0);
+  publish(ma);
 }
 
 void PViz::visualizePose(const std::vector<double> &pose, std::string text)
@@ -547,359 +361,56 @@ void PViz::visualizePose(const std::vector<double> &pose, std::string text)
 
 void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text)
 {
-  int mind = -1;
-  marker_array_.markers.clear();
-  marker_array_.markers.resize(3);
-  ros::Time time = ros::Time::now();
-
-  mind++;
-  marker_array_.markers[mind].header.stamp = time;
-  marker_array_.markers[mind].header.frame_id = reference_frame_;
-  marker_array_.markers[mind].ns = text;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::ARROW;
-  marker_array_.markers[mind].id = 0;
-  marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].scale.x = 0.1;
-  marker_array_.markers[mind].scale.y = 0.015;
-  marker_array_.markers[mind].scale.z = 0.015;
-  marker_array_.markers[mind].color.r = 0.0;
-  marker_array_.markers[mind].color.g = 0.7;
-  marker_array_.markers[mind].color.b = 0.6;
-  marker_array_.markers[mind].color.a = 0.7;
-  marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-  mind++;
-  marker_array_.markers[mind].header.stamp = time;
-  marker_array_.markers[mind].header.frame_id = reference_frame_;
-  marker_array_.markers[mind].ns = text;
-  marker_array_.markers[mind].id = 1;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::SPHERE;
-  marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].scale.x = 0.07;
-  marker_array_.markers[mind].scale.y = 0.07;
-  marker_array_.markers[mind].scale.z = 0.07;
-  marker_array_.markers[mind].color.r = 1.0;
-  marker_array_.markers[mind].color.g = 0.0;
-  marker_array_.markers[mind].color.b = 0.6;
-  marker_array_.markers[mind].color.a = 0.6;
-  marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-  mind++;
-  marker_array_.markers[mind].header.stamp = time;
-  marker_array_.markers[mind].header.frame_id = reference_frame_;
-  marker_array_.markers[mind].ns = text;
-  marker_array_.markers[mind].id = 2;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].pose.position.z += 0.05;
-  marker_array_.markers[mind].scale.x = 0.03;
-  marker_array_.markers[mind].scale.y = 0.03;
-  marker_array_.markers[mind].scale.z = 0.03;
-  marker_array_.markers[mind].color.r = 1.0;
-  marker_array_.markers[mind].color.g = 1.0;
-  marker_array_.markers[mind].color.b = 1.0;
-  marker_array_.markers[mind].color.a = 0.9;
-  marker_array_.markers[mind].text = text;
-  marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-  marker_array_publisher_.publish(marker_array_);
+  geometry_msgs::PoseStamped ps;
+  ps.pose = pose;
+  ps.header.frame_id = reference_frame_;
+  visualization_msgs::MarkerArray ma = viz::getPoseMarkerArray(pose, text, 0);
+  publish(ma);
 }
 
 void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id)
 {
-  int mind = -1;
-  marker_array_.markers.clear();
-  marker_array_.markers.resize(3);
-  ros::Time time = ros::Time::now();
-
-  mind++;
-  marker_array_.markers[mind].header.stamp = time;
-  marker_array_.markers[mind].header.frame_id = frame_id;
-  marker_array_.markers[mind].ns = text;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::ARROW;
-  marker_array_.markers[mind].id = 0;
-  marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].scale.x = 0.1;
-  marker_array_.markers[mind].scale.y = 0.015;
-  marker_array_.markers[mind].scale.z = 0.015;
-  marker_array_.markers[mind].color.r = 0.0;
-  marker_array_.markers[mind].color.g = 0.7;
-  marker_array_.markers[mind].color.b = 0.6;
-  marker_array_.markers[mind].color.a = 0.7;
-  marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-  mind++;
-  marker_array_.markers[mind].header.stamp = time;
-  marker_array_.markers[mind].header.frame_id = frame_id;
-  marker_array_.markers[mind].ns = text;
-  marker_array_.markers[mind].id = 1;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::SPHERE;
-  marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].scale.x = 0.07;
-  marker_array_.markers[mind].scale.y = 0.07;
-  marker_array_.markers[mind].scale.z = 0.07;
-  marker_array_.markers[mind].color.r = 1.0;
-  marker_array_.markers[mind].color.g = 0.0;
-  marker_array_.markers[mind].color.b = 0.6;
-  marker_array_.markers[mind].color.a = 0.6;
-  marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-  mind++;
-  marker_array_.markers[mind].header.stamp = time;
-  marker_array_.markers[mind].header.frame_id = frame_id;
-  marker_array_.markers[mind].ns = text;
-  marker_array_.markers[mind].id = 2;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].pose.position.z += 0.05;
-  marker_array_.markers[mind].scale.x = 0.03;
-  marker_array_.markers[mind].scale.y = 0.03;
-  marker_array_.markers[mind].scale.z = 0.03;
-  marker_array_.markers[mind].color.r = 1.0;
-  marker_array_.markers[mind].color.g = 1.0;
-  marker_array_.markers[mind].color.b = 1.0;
-  marker_array_.markers[mind].color.a = 0.9;
-  marker_array_.markers[mind].text = text;
-  marker_array_.markers[mind].lifetime = ros::Duration(0.0);
-
-  marker_array_publisher_.publish(marker_array_);
+  visualization_msgs::MarkerArray ma = viz::getPoseMarkerArray(pose, frame_id, text, 0);
+  publish(ma);
 }
 
-visualization_msgs::MarkerArray PViz::getPoseMarkerMsg(const geometry_msgs::Pose &pose, double radius, double arrow_length, double arrow_width, double hue, double alpha, std::string ns, int id)
+void PViz::visualizeSphere(std::vector<double> pose, int color, std::string ns, double radius)
 {
-  double r=0,g=0,b=0;
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
-  ros::Time time = ros::Time::now();
-
-  marker_array_.markers.clear();
-  marker_array_.markers.resize(2);
-  marker_array_.markers[0].header.stamp = time;
-  marker_array_.markers[0].header.frame_id = reference_frame_;
-  marker_array_.markers[0].ns = ns;
-  marker_array_.markers[0].id = id;
-  marker_array_.markers[0].type = visualization_msgs::Marker::ARROW;
-  marker_array_.markers[0].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[0].pose = pose;
-  marker_array_.markers[0].scale.x = arrow_length;
-  marker_array_.markers[0].scale.y = arrow_width;
-  marker_array_.markers[0].scale.z = arrow_width;
-  marker_array_.markers[0].color.r = r;
-  marker_array_.markers[0].color.g = g;
-  marker_array_.markers[0].color.b = b;
-  marker_array_.markers[0].color.a = alpha;
-  marker_array_.markers[0].lifetime = ros::Duration(0.0);
-  marker_array_.markers[1].header.stamp = time;
-  marker_array_.markers[1].header.frame_id = reference_frame_;
-  marker_array_.markers[1].ns = ns;
-  marker_array_.markers[1].id = id+1;
-  marker_array_.markers[1].type = visualization_msgs::Marker::SPHERE;
-  marker_array_.markers[1].action = visualization_msgs::Marker::ADD;
-  marker_array_.markers[1].pose = pose;
-  marker_array_.markers[1].scale.x = radius;
-  marker_array_.markers[1].scale.y = radius;
-  marker_array_.markers[1].scale.z = radius;
-  marker_array_.markers[1].color.r = r;
-  marker_array_.markers[1].color.g = g;
-  marker_array_.markers[1].color.b = b;
-  marker_array_.markers[1].color.a = alpha;
-  marker_array_.markers[1].lifetime = ros::Duration(0.0);
-  return marker_array_;
-}
-
-void PViz::visualizeSphere(std::vector<double> pose, int color, std::string text, double radius)
-{
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = text + "-sphere";
-  marker.id = 1;
-  marker.type = visualization_msgs::Marker::SPHERE;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position.x = pose[0];
-  marker.pose.position.y = pose[1];
-  marker.pose.position.z = pose[2];
-  marker.scale.x = radius*2;
-  marker.scale.y = radius*2;
-  marker.scale.z = radius*2;
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 1.0;
-  marker.lifetime = ros::Duration(0.0);
-
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getSphereMarker(pose[0], pose[1], pose[2], radius, color, reference_frame_, ns, 1);
+  publish(m);
 }
 
 void PViz::visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::SPHERE;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position.x = x;
-  marker.pose.position.y = y;
-  marker.pose.position.z = z;
-  marker.scale.x = radius*2;
-  marker.scale.y = radius*2;
-  marker.scale.z = radius*2;
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 1.0;
-  marker.lifetime = ros::Duration(0.0);
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getSphereMarker(x, y, z, radius, hue, reference_frame_, ns, 0);
+  publish(m);
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, double radius)
+void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string ns, double radius)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = "spheres-" + text;
-  marker.type = visualization_msgs::Marker::SPHERE_LIST;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.scale.x = radius*2.0;
-  marker.scale.y = radius*2.0;
-  marker.scale.z = radius*2.0;
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 0.6;
-  marker.lifetime = ros::Duration(0.0);
-  marker.id = 1;
-
-  marker.points.resize(pose.size());
-  for(size_t i = 0; i < pose.size(); i++)
-  {
-    marker.points[i].x = pose[i][0];
-    marker.points[i].y = pose[i][1];
-    marker.points[i].z = pose[i][2];
-  }
-
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getSpheresMarker(pose, radius, color, reference_frame_, ns);
+  publish(m);
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, std::vector<double> &radius)
+void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string ns, std::vector<double> &radius)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-  for(size_t i = 0; i < pose.size(); ++i)
-  {
-    marker.header.stamp = ros::Time::now();
-    marker.header.frame_id = reference_frame_;
-    marker.ns = text;
-    marker.type = visualization_msgs::Marker::SPHERE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = radius[i]*2.0;
-    marker.scale.y = radius[i]*2.0;
-    marker.scale.z = radius[i]*2.0;
-    marker.color.r = r;
-    marker.color.g = g;
-    marker.color.b = b;
-    marker.color.a = 0.6;
-    marker.lifetime = ros::Duration(0.0);
-    marker.id = i;
-
-    marker.pose.position.x = pose[i][0];
-    marker.pose.position.y = pose[i][1];
-    marker.pose.position.z = pose[i][2];
-
-    marker_publisher_.publish(marker);
-    usleep(100);
-  }
+  visualization_msgs::MarkerArray ma = viz::getSpheresMarkerArray(pose, radius, color, reference_frame_, ns, 0);
+  publish(ma);
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text)
+void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string ns)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-  visualization_msgs::MarkerArray marker_array;
-  HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-  for(size_t i = 0; i < pose.size(); ++i)
-  {
-    marker.header.stamp = ros::Time::now();
-    marker.header.frame_id = reference_frame_;
-    marker.ns = text;
-    marker.type = visualization_msgs::Marker::SPHERE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = pose[i][3]*2.0;
-    marker.scale.y = pose[i][3]*2.0;
-    marker.scale.z = pose[i][3]*2.0;
-    marker.color.r = r;
-    marker.color.g = g;
-    marker.color.b = b;
-    marker.color.a = 0.6;
-    marker.lifetime = ros::Duration(0.0);
-    marker.id = i;
-
-    marker.pose.position.x = pose[i][0];
-    marker.pose.position.y = pose[i][1];
-    marker.pose.position.z = pose[i][2];
-
-    marker_array.markers.push_back(marker);
-  }
-  marker_array_publisher_.publish(marker_array);
-}
-
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string text)
-{
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-  visualization_msgs::MarkerArray marker_array;
-
-  if(pose.size() != hue.size())
-  {
-    ROS_WARN("[pviz] Didn't receive as many colors as I did spheres. Not visualizing. (spheres: %d, colors: %d)", int(pose.size()), int(hue.size()));
+  if(pose.empty() || pose[0][3])
     return;
-  }
 
-  for(std::size_t i = 0; i < pose.size(); ++i)
-  {
-    HSVtoRGB(&r, &g, &b, hue[i], 1.0, 1.0);
-    marker.header.stamp = ros::Time::now();
-    marker.header.frame_id = reference_frame_;
-    marker.ns = text;
-    marker.type = visualization_msgs::Marker::SPHERE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = pose[i][3]*2.0;
-    marker.scale.y = pose[i][3]*2.0;
-    marker.scale.z = pose[i][3]*2.0;
-    marker.color.r = r;
-    marker.color.g = g;
-    marker.color.b = b;
-    marker.color.a = 0.6;
-    marker.lifetime = ros::Duration(0.0);
-    marker.id = i;
-    marker.pose.position.x = pose[i][0];
-    marker.pose.position.y = pose[i][1];
-    marker.pose.position.z = pose[i][2];
-    marker_array.markers.push_back(marker);
-  }
-  marker_array_publisher_.publish(marker_array);
+  visualization_msgs::Marker m = viz::getSpheresMarker(pose, pose[0][3], color, reference_frame_, ns, 0);
+  publish(m);
+}
+
+void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string ns)
+{
+  visualization_msgs::MarkerArray ma = viz::getSpheresMarkerArray(pose, hue, reference_frame_, ns, 0);
+  publish(ma);
 }
 
 void PViz::deleteVisualizations(std::string ns, int max_id)
@@ -1090,224 +601,38 @@ void PViz::visualizeDetailedStates(const std::vector<std::vector<double> > &stat
 
 void PViz::visualizeLine(const std::vector<geometry_msgs::Point> points, std::string ns, int id, int hue, double thickness)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::LINE_STRIP;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.points = points;
-  marker.scale.x = thickness;
-  marker.pose.position.x = 0.0;
-  marker.pose.position.y = 0.0;
-  marker.pose.position.z = 0.0;
-  
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 0.5;
-  marker.lifetime = ros::Duration(0.0);
-
-  ROS_DEBUG("[pviz] Visualizing a line with %d points", int(points.size()));
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getLineMarker(points, thickness, hue, reference_frame_, ns, id);
+  publish(m);
 }
 
 void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string ns, int id, int hue)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.scale.x = 0.2;
-  marker.scale.y = 0.2;
-  marker.scale.z = 0.2;
-  marker.pose = pose;
-  
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 1.0;
-  marker.text = text;
-  marker.lifetime = ros::Duration(0.0);
-
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getTextMarker(pose, text, 0.2, hue, reference_frame_, ns, id);
+  publish(m);
 }
 
 void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string ns, int id, std::vector<double> color, double size)
 {
-  visualization_msgs::Marker marker;
-
-  if(color.size() < 4)
-    color.resize(4,1);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.scale.x = size;
-  marker.scale.y = size;
-  marker.scale.z = size;
-  marker.pose = pose;
-  
-  marker.color.r = color[0];
-  marker.color.g = color[1];
-  marker.color.b = color[2];
-  marker.color.a = color[3];
-  marker.text = text;
-  marker.lifetime = ros::Duration(0.0);
-
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getTextMarker(pose, text, size, color, reference_frame_, ns, id);
+  publish(m);
 }
 
-void PViz::visualizeCube(geometry_msgs::PoseStamped pose, int color, std::string ns, int id, std::vector<double> dim)
+void PViz::visualizeCube(geometry_msgs::PoseStamped pose, int hue, std::string ns, int id, std::vector<double> dim)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  if(dim.size() < 3)
-  {
-    ROS_INFO("[aviz] Three dimensions are needed to visualize a cube.");
-    if(dim.size() > 1)
-      dim.resize(3,dim[0]);
-    else
-      return;
-  }
-
-  HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = pose.header.frame_id;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::CUBE;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.pose = pose.pose;
-  marker.scale.x = dim[0];
-  marker.scale.y = dim[1];
-  marker.scale.z = dim[2];
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 1.0;
-  marker.lifetime = ros::Duration(0.0);
-
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getCubeMarker(pose, dim, hue, ns, id);
+  publish(m);
 }
 
-void PViz::visualizeMesh(const std::string& mesh_resource, const geometry_msgs::PoseStamped& pose, int color,
-                         std::string ns, int id)
+void PViz::visualizeMesh(const std::string& mesh_resource, const geometry_msgs::PoseStamped& pose, int color, std::string ns, int id)
 {
-	double r = 0.0, g = 0.0, b = 0.0;
-	HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-	visualization_msgs::Marker marker;
-	marker.header.frame_id = reference_frame_;
-	marker.header.stamp = ros::Time::now();
-	marker.ns = ns;
-	marker.id = id;
-	marker.type = visualization_msgs::Marker::MESH_RESOURCE;
-	marker.action = visualization_msgs::Marker::ADD;
-	marker.pose.position.x = pose.pose.position.x;
-	marker.pose.position.y = pose.pose.position.y;
-	marker.pose.position.z = pose.pose.position.z;
-	marker.pose.orientation.x = pose.pose.orientation.x;
-	marker.pose.orientation.y = pose.pose.orientation.y;
-	marker.pose.orientation.z = pose.pose.orientation.z;
-	marker.pose.orientation.w = pose.pose.orientation.w;
-	marker.scale.x = 1.0;
-	marker.scale.y = 1.0;
-	marker.scale.z = 1.0;
-	marker.color.a = 1.0;
-	marker.color.r = r;
-	marker.color.g = g;
-	marker.color.b = b;
-	marker.mesh_resource = mesh_resource;
-
-	marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getMeshMarker(pose, mesh_resource, color, ns, id);
+  publish(m);
 }
 
-void PViz::visualizeMeshTriangles(const std::vector<geometry_msgs::Point>& vertices, const std::vector<int>& triangles,
-                         const geometry_msgs::PoseStamped& pose, int color, std::string ns, int id, bool psychadelic)
+void PViz::visualizeMeshTriangles(const std::vector<geometry_msgs::Point>& vertices, const std::vector<int>& triangles, const geometry_msgs::PoseStamped& pose, int color, std::string ns, int id, bool psychadelic)
 {
-	double r = 0.0, g = 0.0, b = 0.0;
-	HSVtoRGB(&r, &g, &b, color, 1.0, 1.0);
-
-	std_msgs::ColorRGBA red; red.a = 1.0f; red.r = 1.0f; red.g = 0.0f; red.b = 0.0f;
-	std_msgs::ColorRGBA green; green.a = 1.0f; green.r = 0.0f; green.g = 1.0f; green.b = 0.0f;
-	std_msgs::ColorRGBA blue; blue.a = 1.0f; blue.r = 0.0f; blue.g = 0.0f; blue.b = 1.0f;
-
-	std::vector<std_msgs::ColorRGBA> colors;
-	for (int i = 0; i < (int)vertices.size(); i++) {
-		if (i % 3 == 0) colors.push_back(red);
-		if (i % 3 == 1) colors.push_back(green);
-		if (i % 3 == 2) colors.push_back(blue);
-	}
-
-	visualization_msgs::Marker marker;
-	marker.header.frame_id = reference_frame_;
-	marker.header.stamp = ros::Time::now();
-	marker.ns = ns;
-	marker.id = id;
-	marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
-	marker.action = visualization_msgs::Marker::ADD;
-	marker.pose.position.x = pose.pose.position.x;
-	marker.pose.position.y = pose.pose.position.y;
-	marker.pose.position.z = pose.pose.position.z;
-	marker.pose.orientation.x = pose.pose.orientation.x;
-	marker.pose.orientation.y = pose.pose.orientation.y;
-	marker.pose.orientation.z = pose.pose.orientation.z;
-	marker.pose.orientation.w = pose.pose.orientation.w;
-	marker.scale.x = 1.0;
-	marker.scale.y = 1.0;
-	marker.scale.z = 1.0;
-	marker.points = vertices;
-
-	if (psychadelic) {
-		marker.color.a = 1.0;
-		marker.color.r = 1.0;
-		marker.color.g = 1.0;
-		marker.color.b = 1.0;
-		marker.colors = colors;
-	}
-	else {
-		marker.color.a = 1.0;
-		marker.color.r = r;
-		marker.color.g = g;
-		marker.color.b = b;
-	}
-
-	marker_publisher_.publish(marker);
-}
-
-void PViz::printKDLChain(std::string name, KDL::Chain &chain)
-{
-  ROS_INFO("chain: %s", name.c_str());
-  for(unsigned int j = 0; j < chain.getNrOfSegments(); ++j)
-  {
-    ROS_INFO("  frame %2d: segment: %0.3f %0.3f %0.3f  joint: %0.3f %0.3f %0.3f   joint_type: %s",j,
-        chain.getSegment(j).pose(0).p.x(),
-        chain.getSegment(j).pose(0).p.y(),
-        chain.getSegment(j).pose(0).p.z(),
-        chain.getSegment(j).getJoint().pose(0).p.x(),
-        chain.getSegment(j).getJoint().pose(0).p.y(),
-        chain.getSegment(j).getJoint().pose(0).p.z(),
-        chain.getSegment(j).getJoint().getTypeName().c_str());
-  }
-  ROS_INFO(" ");
+  visualization_msgs::Marker m = viz::getMeshMarker(pose, vertices, triangles, color, psychadelic, ns, id);
+  publish(m);
 }
 
 bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, std::vector<double> &base_pos, double torso_pos, std::vector<geometry_msgs::PoseStamped> &poses)
@@ -1386,7 +711,7 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
       {
         geometry_msgs::Pose p;
         p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
-        multiply(poses[i].pose, p, poses[i].pose);
+        leatherman::multiply(poses[i].pose, p, poses[i].pose);
       }
     }
     // right arm - left finger only
@@ -1405,7 +730,7 @@ bool PViz::computeFKforVisualizationWithKDL(const std::vector<double> &jnt0_pos,
       {
         geometry_msgs::Pose p;
         p.orientation = tf::createQuaternionMsgFromRollPitchYaw(M_PI, 0, 0);
-        multiply(poses[i].pose, p, poses[i].pose);
+        leatherman::multiply(poses[i].pose, p, poses[i].pose);
       }
     }
     // left arm - left finger only
@@ -1438,7 +763,7 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   marker_array_.markers.resize(robot_meshes_.size());
   ros::Time time = ros::Time();
 
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
 
   for(int i = 0; i < (int)marker_array_.markers.size(); ++i)
   {
@@ -1479,7 +804,7 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   marker_array_.markers.clear();
   marker_array_.markers.resize(robot_meshes_.size());
   ros::Time time = ros::Time();
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
 
   for(int i = 0; i < (int)marker_array_.markers.size(); ++i)
   {
@@ -1612,19 +937,6 @@ bool PViz::parseCSVFile(std::string filename, int num_cols, std::vector<std::vec
 
   ROS_DEBUG("[pviz] raw_data: num rows: %d",(int)raw_data.size());
   ROS_DEBUG("[pviz] data: num rows: %d num_cols: %d",(int)data.size(), int(data[0].size()));
-
-  /*
-  printf("Trajectory:\n");
-  for(size_t i = 0; i < data.size(); ++i)
-  {
-    printf("%d: ", int(i));
-    for(size_t j = 0; j < data[i].size(); ++j)
-    {
-      printf("% 0.2f ", data[i][j]);
-    }
-    printf("\n");
-  }
-  */
   return true;
 }
 
@@ -1667,7 +979,7 @@ void PViz::visualizeRobotWithTitle(std::vector<double> &jnt0_pos, std::vector<do
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
 
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
 
   marker.header.stamp = ros::Time::now();
   marker.header.frame_id = reference_frame_;
@@ -1731,33 +1043,8 @@ void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint
 
 void PViz::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int hue, std::string ns, int id, double radius)
 {
-  if(poses.empty())
-  {
-    ROS_INFO("[visualizeShortestPath] The shortest path is empty.");
-    return;
-  }
-
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
-
-  marker.header.frame_id = reference_frame_;
-  marker.header.stamp = ros::Time();
-  marker.header.seq = 0;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::SPHERE_LIST;
-  marker.action = 0;
-  marker.scale.x = radius;
-  marker.scale.y = radius;
-  marker.scale.z = radius;
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 0.8;
-  marker.lifetime = ros::Duration(0.0);
-  marker.points = poses;
-  marker_publisher_.publish(marker);
+  visualization_msgs::Marker m = viz::getSpheresMarker(poses, radius, hue, reference_frame_, ns, id);
+  publish(m);
 }
 
 void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open)
@@ -1775,7 +1062,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // g1 = r_gripper_r_finger_link in r_gripper_palm - OPEN
   g1.position.x = 0.077; g1.position.y = -0.010; g1.position.z = 0.00;
   g1.orientation.x = 0.0; g1.orientation.y = 0.0; g1.orientation.z = -0.231; g1.orientation.w = 0.973;
-  multiply(g1, rot, g1);
+  leatherman::multiply(g1, rot, g1);
   // g2 = r_gripper_l_finger_link in r_gripper_palm - OPEN
   g2.position.x = 0.077; g2.position.y = 0.010; g2.position.z = 0.00;
   g2.orientation.x = 0.0; g2.orientation.y = 0.0; g2.orientation.z = 0.231; g2.orientation.w = 0.973;
@@ -1783,7 +1070,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // g3 = r_gripper_r_finger_tip_link in r_gripper_palm - OPEN
   g3.position.x = 0.156; g3.position.y = -0.056; g3.position.z = 0.00;
   g3.orientation.x = 0.0; g3.orientation.y = 0.0; g3.orientation.z = 0.0; g3.orientation.w = 1.000;
-  multiply(g3, rot, g3);
+  leatherman::multiply(g3, rot, g3);
   // g4 = r_gripper_l_finger_tip_link in r_gripper_palm - OPEN
   g4.position.x = 0.156; g4.position.y = 0.056; g4.position.z = 0.00;
   g4.orientation.x = 0.0; g4.orientation.y = 0.0; g4.orientation.z = 0.0; g4.orientation.w = 1.000;
@@ -1792,7 +1079,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   g5.position.x = 0.077; g5.position.y = -0.010; g5.position.z = 0.00;
   g5.orientation.x = 0.0; g5.orientation.y = 0.0; g5.orientation.z = 0.004; g5.orientation.w = 1.000;
   // g5 = g1; g5.orientation.x = 0.0; g5.orientation.y = 0.0; g5.orientation.z = 0.004; g5.orientation.w = 1.000;
-  multiply(g5, rot, g5);
+  leatherman::multiply(g5, rot, g5);
   // g6 = r_gripper_l_finger_link in r_gripper_palm - CLOSED
   g6.position.x = 0.077; g6.position.y = 0.010; g6.position.z = 0.00;
   g6.orientation.x = 0.0; g6.orientation.y = 0.0; g6.orientation.z = -0.004; g6.orientation.w = 1.000;
@@ -1800,7 +1087,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // g7 = r_gripper_r_finger_tip_link in r_gripper_palm - CLOSED
   g7.position.x = 0.168; g7.position.y = -0.014; g7.position.z = 0.00;
   g7.orientation.x = 0.0; g7.orientation.y = 0.0; g7.orientation.z = 0.0; g7.orientation.w = 1.000;
-  multiply(g7, rot, g7);
+  leatherman::multiply(g7, rot, g7);
   // g8 = r_gripper_l_finger_tip_link in r_gripper_palm - CLOSED
   g8.position.x = 0.168; g8.position.y = 0.014; g8.position.z = 0.00;
   g8.orientation.x = 0.0; g8.orientation.y = 0.0; g8.orientation.z = 0.0; g8.orientation.w = 1.000;
@@ -1810,7 +1097,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   visualization_msgs::Marker m;
   std::vector<geometry_msgs::Pose> p(4);
 
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
 
   m.header.stamp = ros::Time::now();
   m.header.frame_id = "base_footprint";
@@ -1850,13 +1137,13 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // upper_finger_r
   m.mesh_resource = gripper_meshes_[0];
   m.id++;
-  multiply(pose, p[0], m.pose);
+  leatherman::multiply(pose, p[0], m.pose);
   markers.push_back(m);
 
   // upper_finger_l
   m.mesh_resource = gripper_meshes_[2];
   m.id++;
-  multiply(pose, p[1], m.pose);
+  leatherman::multiply(pose, p[1], m.pose);
   markers.push_back(m);
 
   m.color.r = 90.0/255.0;
@@ -1866,13 +1153,13 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // finger_tip_r
   m.mesh_resource = gripper_meshes_[1];
   m.id++;
-  multiply(pose, p[2], m.pose);
+  leatherman::multiply(pose, p[2], m.pose);
   markers.push_back(m);
 
   // finger_tip_l
   m.mesh_resource = gripper_meshes_[3];
   m.id++;
-  multiply(pose, p[3], m.pose);
+  leatherman::multiply(pose, p[3], m.pose);
   markers.push_back(m);
 }
 
@@ -1891,7 +1178,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   rgrfl_in_rgp.orientation.y = 0.0;
   rgrfl_in_rgp.orientation.z = 0.004;
   rgrfl_in_rgp.orientation.w = 1.000;
-  multiply(rgrfl_in_rgp, rot, rgrfl_in_rgp);
+  leatherman::multiply(rgrfl_in_rgp, rot, rgrfl_in_rgp);
 
   // r_gripper_l_finger_link in r_gripper_palm
   static geometry_msgs::Pose rglfl_in_rgp;
@@ -1926,17 +1213,17 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // Open the gripper appropriately.
   geometry_msgs::Pose open;
   open.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, position);
-  multiply(rgrfl_in_rgp, open, rgrfl_in_rgp);
-  multiply(rglfl_in_rgp, open, rglfl_in_rgp);
+  leatherman::multiply(rgrfl_in_rgp, open, rgrfl_in_rgp);
+  leatherman::multiply(rglfl_in_rgp, open, rglfl_in_rgp);
 
   open.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, -position);
-  multiply(rgrftl_in_rgrfl, open, rgrftl_in_rgrfl);
-  multiply(rglftl_in_rglfl, open, rglftl_in_rglfl);
+  leatherman::multiply(rgrftl_in_rgrfl, open, rgrftl_in_rgrfl);
+  leatherman::multiply(rglftl_in_rglfl, open, rglftl_in_rglfl);
 
   geometry_msgs::Pose rgrftl_in_rgp;
-  multiply(rgrfl_in_rgp, rgrftl_in_rgrfl, rgrftl_in_rgp);
+  leatherman::multiply(rgrfl_in_rgp, rgrftl_in_rgrfl, rgrftl_in_rgp);
   geometry_msgs::Pose rglftl_in_rgp;
-  multiply(rglfl_in_rgp, rglftl_in_rglfl, rglftl_in_rgp);
+  leatherman::multiply(rglfl_in_rgp, rglftl_in_rglfl, rglftl_in_rgp);
 
   double r, g, b;
   visualization_msgs::Marker m;
@@ -1946,7 +1233,7 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   p[2] = rgrftl_in_rgp;
   p[3] = rglftl_in_rgp;
 
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
 
   m.header.stamp = ros::Time::now();
   m.header.frame_id = "/base_footprint";
@@ -1970,13 +1257,13 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // upper_finger_r
   m.mesh_resource = gripper_meshes_[0];
   m.id++;
-  multiply(pose, p[0], m.pose);
+  leatherman::multiply(pose, p[0], m.pose);
   markers.push_back(m);
 
   // upper_finger_l
   m.mesh_resource = gripper_meshes_[2];
   m.id++;
-  multiply(pose, p[1], m.pose);
+  leatherman::multiply(pose, p[1], m.pose);
   markers.push_back(m);
 
   m.color.r = 90.0/255.0;
@@ -1986,52 +1273,24 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   // finger_tip_r
   m.mesh_resource = gripper_meshes_[1];
   m.id++;
-  multiply(pose, p[2], m.pose);
+  leatherman::multiply(pose, p[2], m.pose);
   markers.push_back(m);
 
   // finger_tip_l
   m.mesh_resource = gripper_meshes_[3];
   m.id++;
-  multiply(pose, p[3], m.pose);
+  leatherman::multiply(pose, p[3], m.pose);
   markers.push_back(m);
-}
-
-void PViz::multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, geometry_msgs::Pose &c)
-{
-  tf::Transform bta, btb, btc;
-  tf::poseMsgToTF(a, bta);
-  tf::poseMsgToTF(b, btb);
-  btc = bta * btb;
-  tf::poseTFToMsg(btc, c);
 }
 
 void PViz::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)
 {
-  double r=0,g=0,b=0;
-  visualization_msgs::Marker marker;
-
-  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
-
-  marker.header.stamp = ros::Time::now();
-  marker.header.frame_id = reference_frame_;
-  marker.ns = ns;
-  marker.id = id;
-  marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.scale.x = size;
-  marker.scale.y = size;
-  marker.scale.z = size;
-  marker.pose.position.x = x;
-  marker.pose.position.y = y;
-  marker.pose.position.z = z;
-  marker.pose.orientation.w = 1.0;
-
-  marker.color.r = r;
-  marker.color.g = g;
-  marker.color.b = b;
-  marker.color.a = 1.0;
-  marker.text = text;
-  marker.lifetime = ros::Duration(0.0);
-  marker_publisher_.publish(marker);
+  geometry_msgs::Pose p;
+  p.position.x = x;
+  p.position.y = y;
+  p.position.z = z;
+  p.orientation.w = 1.0;
+  visualization_msgs::Marker m = viz::getTextMarker(p, text, size, hue, reference_frame_, ns, id);
+  publish(m);
 }
 

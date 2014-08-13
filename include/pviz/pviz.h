@@ -77,8 +77,6 @@ class PViz
     /* \brief visualize a pose (sphere, arrow, string of text) */
     void visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id);
 
-    visualization_msgs::MarkerArray getPoseMarkerMsg(const geometry_msgs::Pose &pose, double radius, double arrow_length, double arrow_width, double hue, double alpha, std::string ns, int id);
-
     /* \brief visualize a list of poses (sphere, arrow, pose index number) */
     void visualizePoses(const std::vector<std::vector<double> > &poses);
  
@@ -91,18 +89,18 @@ class PViz
     void visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id);
 
      /* \brief visualize a sphere */
-    void visualizeSphere(std::vector<double> pose, int color, std::string text, double radius);
+    void visualizeSphere(std::vector<double> pose, int color, std::string ns, double radius);
     
     /* \brief display a list of spheres of the same radius and color */
-    void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, double radius);
+    void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string ns, double radius);
 
     /* \brief display a list of spheres of the same color with different radii */
-    void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, std::vector<double> &radius);
+    void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string ns, std::vector<double> &radius);
  
     /* \brief display a list of spheres of the same radius and color (radii are 4th element in pose vector) */
-    void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text);
+    void visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string ns);
     
-    void visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string text);
+    void visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string ns);
 
     void visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int hue, std::string ns, int id, double radius);
 
@@ -114,7 +112,7 @@ class PViz
 
     void visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id);
 
-    void visualizeCube(geometry_msgs::PoseStamped pose, int color, std::string ns, int id, std::vector<double> dim);
+    void visualizeCube(geometry_msgs::PoseStamped pose, int hue, std::string ns, int id, std::vector<double> dim);
 
     /* \brief visualize a mesh where mesh_resource is the path to the mesh using the URI used by resource_retriever package */
     void visualizeMesh(const std::string& mesh_resource, const geometry_msgs::PoseStamped& pose, int color, std::string ns, int id);
@@ -189,12 +187,6 @@ class PViz
 
     /* \brief visualize robot meshes...not to be used publicly */
     void visualizeRobotMeshes(double hue, std::string ns, int start_id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials = false);
-
-    /* \brief print KDL chain */
-    void printKDLChain(std::string name, KDL::Chain &chain);
-
-    /* \brief multiply two poses */
-    void multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, geometry_msgs::Pose &c);
 };
 
 #endif
