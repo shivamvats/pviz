@@ -12,7 +12,7 @@ library is great for debugging.
 PViz relies on the KDL for kinematics which means that TF and Gazebo are not
 needed.
 
-**_Note: the master branch should work with Fuerte & Groovy_**
+**_Note: the master branch is tested working with Groovy (very possible still works in Fuerte)_**
 
 #### Visualization Functions:
 
@@ -39,13 +39,14 @@ needed.
  * getCubeMsg
 
 ##### Work with Marker Msgs:
- * publishMarker
- * publishMarkerArray
+ * publish   (overloaded for Marker & MarkerArray)
  * deleteVisualizations
 
 **_(Many of the functions above are overloaded with many different options of parameters to use)_**
 
 ## Install
+
+ `git clone https://github.com/bcohen/leatherman.git`
 
  `git clone https://github.com/bcohen/pviz.git`
  
