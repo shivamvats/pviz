@@ -407,11 +407,9 @@ void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
 {
   if(dpath.empty())
   {
-    ROS_INFO("[visualizeShortestPath] The shortest path is empty.");
+    ROS_WARN("[pviz] The 3D path is empty.");
     return;
   }
-  else
-    ROS_INFO("[visualizeShortestPath] There are %i waypoints in the shortest path.",int(dpath.size()));
 
   visualization_msgs::Marker obs_marker;
   obs_marker.header.frame_id = reference_frame_;
@@ -421,9 +419,9 @@ void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
   obs_marker.id = 0;
   obs_marker.type = visualization_msgs::Marker::SPHERE_LIST;
   obs_marker.action = 0;
-  obs_marker.scale.x = 3*0.02;
-  obs_marker.scale.y = 3*0.02;
-  obs_marker.scale.z = 3*0.02;
+  obs_marker.scale.x = 0.06;
+  obs_marker.scale.y = 0.06;
+  obs_marker.scale.z = 0.06;
   obs_marker.color.r = 0.45;
   obs_marker.color.g = 0.3;
   obs_marker.color.b = 0.4;
@@ -453,7 +451,7 @@ void PViz::visualizeBasicStates(const std::vector<std::vector<double> > &states,
   //check if the list is empty
   if(states.empty())
   {
-    ROS_DEBUG("[visualizeBasicStates] There are no states in the %s states list.", name.c_str());
+    ROS_DEBUG("[pviz] There are no states in the %s states list.", name.c_str());
     return;
   }
 
