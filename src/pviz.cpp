@@ -338,7 +338,7 @@ void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text)
   geometry_msgs::PoseStamped ps;
   ps.pose = pose;
   ps.header.frame_id = reference_frame_;
-  visualization_msgs::MarkerArray ma = viz::getPoseMarkerArray(pose, text, 0);
+  visualization_msgs::MarkerArray ma = viz::getPoseMarkerArray(ps, text, 0);
   publish(ma);
 }
 
