@@ -9,6 +9,7 @@
 #include <math.h>
 #include <time.h>
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Vector3.h>
 #include <tf/tf.h>
@@ -64,7 +65,11 @@ class PViz
 
     void visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle, std::string ns="robot_path", int id=0);
 
-    void visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open);
+    void visualizeGripper(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, bool open);
+
+    void visualizeNailer(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id);
+
+    void visualizeVacuumGripper(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id);
 
     /**************** Shapes, Text & Lines ****************/
 
@@ -130,6 +135,10 @@ class PViz
     void getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open, std::vector<visualization_msgs::Marker> &markers);
 
     void getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, double position, std::vector<visualization_msgs::Marker> &markers);
+
+    void getNailerMarkerMsg(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, visualization_msgs::Marker &m);
+
+    void getVacuumGripperMarkerMsg(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, visualization_msgs::Marker &m);
 
     void getCubeMsg(std::vector<double> &cube, std::vector<double> &color, std::string ns, int id, visualization_msgs::Marker& marker);
 

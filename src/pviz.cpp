@@ -767,6 +767,58 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
     marker_array_.markers[i].lifetime = ros::Duration(0.0);
     marker_array_.markers[i].mesh_resource = robot_meshes_[i];
   }
+
+  // Add the tools to the visualization
+  visualization_msgs::Marker m;
+  m.header.stamp = time;
+  m.header.frame_id = reference_frame_;
+  m.ns = ns;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = 0.001;
+  m.scale.y = 0.001;
+  m.scale.z = 0.001;
+  if(use_embedded_materials)
+  {
+    m.color.r = 0;
+    m.color.g = 0;
+    m.color.b = 0;
+    m.color.a = 0;
+    m.mesh_use_embedded_materials = true;
+  }
+  else
+  {
+    m.color.r = r;
+    m.color.g = g;
+    m.color.b = b;
+    m.color.a = 0.4;
+  }
+
+  // Add the nailer in the right gripper
+  geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
+  tf::Transform world_to_palm;
+  leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(0.0, 1.5708, 0.0),
+                             tf::Vector3(0.23, 0.0, 0.0));
+  tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+  m.id = id + marker_array_.markers.size();
+  leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
+  m.lifetime = ros::Duration(0.0);
+  m.mesh_resource = "package://tools_description/meshes/nailer.dae";
+  marker_array_.markers.push_back(m);
+
+  // Add the vacuum gripper in the left gripper
+  geometry_msgs::Pose l_gripper_palm_pose = poses.at(25).pose;
+  leatherman::poseMsgTobtTransform(l_gripper_palm_pose, world_to_palm);
+  palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(1.5708, 0.0, 0.0),
+                               tf::Vector3(0.18, 0.0, 0.0));
+  world_to_tool = world_to_palm * palm_to_tool;
+  m.id = id + marker_array_.markers.size();
+  leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
+  m.lifetime = ros::Duration(0.0);
+  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
+  marker_array_.markers.push_back(m);
+
   marker_array_publisher_.publish(marker_array_);
 }
 
@@ -808,6 +860,58 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
     marker_array_.markers[i].lifetime = ros::Duration(0.0);
     marker_array_.markers[i].mesh_resource = robot_meshes_[i];
   }
+
+  // Add the tools to the visualization
+  visualization_msgs::Marker m;
+  m.header.stamp = time;
+  m.header.frame_id = reference_frame_;
+  m.ns = ns;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = 0.001;
+  m.scale.y = 0.001;
+  m.scale.z = 0.001;
+  if(use_embedded_materials)
+  {
+    m.color.r = 0;
+    m.color.g = 0;
+    m.color.b = 0;
+    m.color.a = 0;
+    m.mesh_use_embedded_materials = true;
+  }
+  else
+  {
+    m.color.r = r;
+    m.color.g = g;
+    m.color.b = b;
+    m.color.a = 0.4;
+  }
+
+  // Add the nailer in the right gripper
+  geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
+  tf::Transform world_to_palm;
+  leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(0.0, 1.5708, 0.0),
+                             tf::Vector3(0.23, 0.0, 0.0));
+  tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+  m.id = id + marker_array_.markers.size();
+  leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
+  m.lifetime = ros::Duration(0.0);
+  m.mesh_resource = "package://tools_description/meshes/nailer.dae";
+  marker_array_.markers.push_back(m);
+
+  // Add the vacuum gripper in the left gripper
+  geometry_msgs::Pose l_gripper_palm_pose = poses.at(25).pose;
+  leatherman::poseMsgTobtTransform(l_gripper_palm_pose, world_to_palm);
+  palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(1.5708, 0.0, 0.0),
+                               tf::Vector3(0.18, 0.0, 0.0));
+  world_to_tool = world_to_palm * palm_to_tool;
+  m.id = id + marker_array_.markers.size();
+  leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
+  m.lifetime = ros::Duration(0.0);
+  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
+  marker_array_.markers.push_back(m);
+
   return marker_array_;
 }
 
@@ -1019,10 +1123,24 @@ void PViz::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int
   publish(m);
 }
 
-void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open)
+void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, bool open)
 {
   visualization_msgs::MarkerArray m;
   getGripperMeshesMarkerMsg(pose, hue, ns, id, open, m.markers);
+  publish(m);
+}
+
+void PViz::visualizeNailer(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id)
+{
+  visualization_msgs::Marker m;
+  getNailerMarkerMsg(pose, hue, ns, id, m);
+  publish(m);
+}
+
+void PViz::visualizeVacuumGripper(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id)
+{
+  visualization_msgs::Marker m;
+  getVacuumGripperMarkerMsg(pose, hue, ns, id, m);
   publish(m);
 }
 
@@ -1253,6 +1371,52 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   m.id++;
   leatherman::multiply(pose, p[3], m.pose);
   markers.push_back(m);
+}
+
+void PViz::getNailerMarkerMsg(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, visualization_msgs::Marker &m)
+{
+  const double BIRDHOUSE_MESH_SCALE = 0.001;
+
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = "/base_footprint";
+  m.ns = ns;
+  m.id = id;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = BIRDHOUSE_MESH_SCALE;
+  m.scale.y = BIRDHOUSE_MESH_SCALE;
+  m.scale.z = BIRDHOUSE_MESH_SCALE;
+  double r, g, b;
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  m.color.r = r;
+  m.color.g = g;
+  m.color.b = b;
+  m.color.a = 1.0;
+  m.pose = pose;
+  m.mesh_resource = "package://tools_description/meshes/nailer.dae";
+}
+
+void PViz::getVacuumGripperMarkerMsg(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, visualization_msgs::Marker &m)
+{
+  const double BIRDHOUSE_MESH_SCALE = 0.001;
+
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = "/base_footprint";
+  m.ns = ns;
+  m.id = id;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = BIRDHOUSE_MESH_SCALE;
+  m.scale.y = BIRDHOUSE_MESH_SCALE;
+  m.scale.z = BIRDHOUSE_MESH_SCALE;
+  double r, g, b;
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  m.color.r = r;
+  m.color.g = g;
+  m.color.b = b;
+  m.color.a = 1.0;
+  m.pose = pose;
+  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
 }
 
 void PViz::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)
