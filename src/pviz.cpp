@@ -1019,10 +1019,24 @@ void PViz::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int
   publish(m);
 }
 
-void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open)
+void PViz::visualizeGripper(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, bool open)
 {
   visualization_msgs::MarkerArray m;
   getGripperMeshesMarkerMsg(pose, hue, ns, id, open, m.markers);
+  publish(m);
+}
+
+void PViz::visualizeNailer(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id)
+{
+  visualization_msgs::Marker m;
+  getNailerMarkerMsg(pose, hue, ns, id, m);
+  publish(m);
+}
+
+void PViz::visualizeVacuumGripper(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id)
+{
+  visualization_msgs::Marker m;
+  getVacuumGripperMarkerMsg(pose, hue, ns, id, m);
   publish(m);
 }
 
@@ -1253,6 +1267,52 @@ void PViz::getGripperMeshesMarkerMsg(const geometry_msgs::Pose &pose, double hue
   m.id++;
   leatherman::multiply(pose, p[3], m.pose);
   markers.push_back(m);
+}
+
+void PViz::getNailerMarkerMsg(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, visualization_msgs::Marker &m)
+{
+  const double BIRDHOUSE_MESH_SCALE = 0.001;
+
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = "/base_footprint";
+  m.ns = ns;
+  m.id = id;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = BIRDHOUSE_MESH_SCALE;
+  m.scale.y = BIRDHOUSE_MESH_SCALE;
+  m.scale.z = BIRDHOUSE_MESH_SCALE;
+  double r, g, b;
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  m.color.r = r;
+  m.color.g = g;
+  m.color.b = b;
+  m.color.a = 1.0;
+  m.pose = pose;
+  m.mesh_resource = "package://tools_description/meshes/nailer.dae";
+}
+
+void PViz::getVacuumGripperMarkerMsg(const geometry_msgs::Pose &pose, double hue, const std::string &ns, int id, visualization_msgs::Marker &m)
+{
+  const double BIRDHOUSE_MESH_SCALE = 0.001;
+
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = "/base_footprint";
+  m.ns = ns;
+  m.id = id;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = BIRDHOUSE_MESH_SCALE;
+  m.scale.y = BIRDHOUSE_MESH_SCALE;
+  m.scale.z = BIRDHOUSE_MESH_SCALE;
+  double r, g, b;
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+  m.color.r = r;
+  m.color.g = g;
+  m.color.b = b;
+  m.color.a = 1.0;
+  m.pose = pose;
+  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
 }
 
 void PViz::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)
