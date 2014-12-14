@@ -304,7 +304,12 @@ void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::
 
 void PViz::publish(const visualization_msgs::Marker& marker)
 {
-  marker_publisher_.publish(marker);
+  //marker_publisher_.publish(marker);
+
+  // instead, publish on the MarkerArray topic
+  visualization_msgs::MarkerArray ma;
+  ma.markers.push_back(marker);
+  publish(ma);
 }
 
 void PViz::publish(const visualization_msgs::MarkerArray &marker_array)
@@ -400,7 +405,7 @@ void PViz::deleteVisualizations(std::string ns, int max_id)
     marker_array_.markers[j].action = visualization_msgs::Marker::DELETE;
     marker_array_.markers[j].id = j;
   }
-  marker_array_publisher_.publish(marker_array_);
+  publish(marker_array_);
 }
 
 void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
@@ -440,7 +445,7 @@ void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
     obs_marker.points[k].z = dpath[k][2];
   }
 
-  marker_publisher_.publish(obs_marker);
+  publish(obs_marker);
 }
 
 void PViz::visualizeBasicStates(const std::vector<std::vector<double> > &states, const std::vector<double> &color, std::string name, double size)
@@ -494,7 +499,7 @@ void PViz::visualizeBasicStates(const std::vector<std::vector<double> > &states,
     }
   }
 
-  marker_publisher_.publish(marker);
+  publish(marker);
   ROS_DEBUG("[visualizeBasicStates] published %d markers for %s states", int(marker.points.size()), name.c_str());
 }
 
@@ -568,7 +573,7 @@ void PViz::visualizeDetailedStates(const std::vector<std::vector<double> > &stat
   } 
   
   ROS_DEBUG("[aviz] published %d markers for %s states", (int)marker_array.markers.size(), name.c_str());
-  marker_array_publisher_.publish(marker_array);
+  publish(marker_array);
 }
 
 void PViz::visualizeLine(const std::vector<geometry_msgs::Point> points, std::string ns, int id, int hue, double thickness)
@@ -819,7 +824,7 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
   marker_array_.markers.push_back(m);
 
-  marker_array_publisher_.publish(marker_array_);
+  publish(marker_array_);
 }
 
 visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials)
@@ -1076,7 +1081,7 @@ void PViz::visualizeRobotWithTitle(std::vector<double> &jnt0_pos, std::vector<do
   marker.color.a = 1.5;
   marker.text = title;
   marker.lifetime = ros::Duration(0.0);
-  marker_publisher_.publish(marker);
+  publish(marker);
 }
 
 void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle, std::string ns, int id)
@@ -1114,7 +1119,7 @@ void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint
     ma.markers.insert(ma.markers.end(), ma1.markers.begin(), ma1.markers.end()); 
   }
   ROS_INFO("[pviz] Visualizing a robot path with %d waypoints. (throttle = %d)", int(rpath.size()), throttle);
-  marker_array_publisher_.publish(ma);
+  publish(ma);
 }
 
 void PViz::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int hue, std::string ns, int id, double radius)
