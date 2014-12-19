@@ -72,6 +72,8 @@ PViz::PViz(const std::string &ns)
   robot_meshes_.insert(robot_meshes_.end(),gripper_meshes_.begin(), gripper_meshes_.end());  // 4
   robot_meshes_.insert(robot_meshes_.end(),head_meshes_.begin(), head_meshes_.end());  // 3
 
+  vacuum_mesh_ = "package://tools_description/meshes/big_vacuum_with_texture.dae";
+
   if(!initKDLChain())
   {
     ROS_ERROR("[pviz] Failed to initiliaze the KDL chain. This should exit but instead it will crash."); 
@@ -821,7 +823,7 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
   m.lifetime = ros::Duration(0.0);
-  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
+  m.mesh_resource = vacuum_mesh_;
   marker_array_.markers.push_back(m);
 
   publish(marker_array_);
@@ -914,7 +916,7 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
   m.lifetime = ros::Duration(0.0);
-  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
+  m.mesh_resource = vacuum_mesh_;
   marker_array_.markers.push_back(m);
 
   return marker_array_;
@@ -1421,7 +1423,7 @@ void PViz::getVacuumGripperMarkerMsg(const geometry_msgs::Pose &pose, double hue
   m.color.b = b;
   m.color.a = 1.0;
   m.pose = pose;
-  m.mesh_resource = "package://tools_description/meshes/vacuum.dae";
+  m.mesh_resource = vacuum_mesh_;
 }
 
 void PViz::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)

@@ -170,6 +170,7 @@ class PViz
     std::vector<std::string> base_meshes_;
     std::vector<std::string> head_meshes_;
     std::vector<std::string> robot_meshes_;
+    std::string vacuum_mesh_;
 
     KDL::JntArray jnt_pos_in_;
     KDL::JntArray jnt_pos_out_;
