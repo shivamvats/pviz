@@ -38,7 +38,7 @@ class PViz
     ~PViz();
 
     /* \brief set reference frame of all visualization markers */
-    void setReferenceFrame(std::string frame) {reference_frame_ = frame;};
+    void setReferenceFrame(std::string frame);
     
     /* \brief get reference frame used for the visualizations */
     std::string getReferenceFrame() {return reference_frame_;};
@@ -156,8 +156,9 @@ class PViz
 
     int num_joints_;
 
-    visualization_msgs::MarkerArray marker_array_;
     visualization_msgs::Marker marker_;
+    visualization_msgs::MarkerArray marker_array_;
+    visualization_msgs::MarkerArray delete_marker_array_;
 
     std::vector<std::string> arm_joint_names_;
     std::vector<std::string> arm_link_names_;
@@ -171,6 +172,7 @@ class PViz
     std::vector<std::string> head_meshes_;
     std::vector<std::string> robot_meshes_;
     std::string vacuum_mesh_;
+    std::string nailer_mesh_;
 
     KDL::JntArray jnt_pos_in_;
     KDL::JntArray jnt_pos_out_;

@@ -73,6 +73,17 @@ PViz::PViz(const std::string &ns)
   robot_meshes_.insert(robot_meshes_.end(),head_meshes_.begin(), head_meshes_.end());  // 3
 
   vacuum_mesh_ = "package://tools_description/meshes/big_vacuum_with_texture.dae";
+  nailer_mesh_ = "package://tools_description/meshes/nailer_with_texture.dae";
+
+  // prepare the delete visualization marker array
+  delete_marker_array_.markers.resize(50000);
+  for(int j = 0; j < 50000; j++)
+  {
+    delete_marker_array_.markers[j].header.stamp = ros::Time::now();
+    delete_marker_array_.markers[j].header.frame_id = reference_frame_;
+    delete_marker_array_.markers[j].action = visualization_msgs::Marker::DELETE;
+    delete_marker_array_.markers[j].id = j;
+  }
 
   if(!initKDLChain())
   {
@@ -84,14 +95,14 @@ PViz::PViz(const std::string &ns)
   {
     std::stringstream ss;
     ss << "/" << ns << "/visualization_marker_array";
-    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>(ss.str(), 500);
+    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>(ss.str(), 1000);
     ss.str(std::string());
     ss << "/" << ns << "/visualization_marker";
     marker_publisher_ = nh_.advertise<visualization_msgs::Marker>(ss.str(), 1000);
   }
   else
   {
-    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 500);
+    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1000);
     marker_publisher_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
   }
 }
@@ -102,6 +113,13 @@ PViz::~PViz()
     delete fk_rsolver_[i];
   for(size_t i = 0; i < fk_lsolver_.size(); ++i)
     delete fk_lsolver_[i];
+}
+
+void PViz::setReferenceFrame(std::string frame)
+{
+  reference_frame_ = frame;
+  for(size_t i = 0; i < delete_marker_array_.markers.size(); ++i)
+    delete_marker_array_.markers[i].header.frame_id = frame;
 }
 
 bool PViz::initKDLChain()
@@ -396,18 +414,13 @@ void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, const
 
 void PViz::deleteVisualizations(std::string ns, int max_id)
 {
-  marker_array_.markers.clear();
-  marker_array_.markers.resize(max_id);
+  visualization_msgs::MarkerArray dma;
+  dma.markers.assign(delete_marker_array_.markers.begin(), delete_marker_array_.markers.begin()+max_id);
 
-  for(int j = 0; j < max_id; j++)
-  {
-    marker_array_.markers[j].header.stamp = ros::Time::now();
-    marker_array_.markers[j].header.frame_id = reference_frame_;
-    marker_array_.markers[j].ns = ns;
-    marker_array_.markers[j].action = visualization_msgs::Marker::DELETE;
-    marker_array_.markers[j].id = j;
-  }
-  publish(marker_array_);
+  for(size_t j = 0; j < dma.markers.size(); j++)
+    dma.markers[j].ns = ns;
+  
+  publish(dma);
 }
 
 void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
@@ -805,20 +818,21 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(0.0, 1.5708, 0.0),
-                             tf::Vector3(0.23, 0.0, 0.0));
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, 1.5708, M_PI),
+                             tf::Vector3(0.23, 0.0, -0.003));
   tf::Transform world_to_tool = world_to_palm * palm_to_tool;
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
   m.lifetime = ros::Duration(0.0);
-  m.mesh_resource = "package://tools_description/meshes/nailer.dae";
+  m.mesh_resource = nailer_mesh_;
   marker_array_.markers.push_back(m);
 
   // Add the vacuum gripper in the left gripper
   geometry_msgs::Pose l_gripper_palm_pose = poses.at(25).pose;
   leatherman::poseMsgTobtTransform(l_gripper_palm_pose, world_to_palm);
-  palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(1.5708, 0.0, 0.0),
-                               tf::Vector3(0.18, 0.0, 0.0));
+  //palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(1.5708, 0.0, 0.0),
+  palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(0.0, 0.0, 0.0),
+                               tf::Vector3(0.183, 0.0, 0.0));
   world_to_tool = world_to_palm * palm_to_tool;
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
@@ -898,20 +912,21 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(0.0, 1.5708, 0.0),
-                             tf::Vector3(0.23, 0.0, 0.0));
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, 1.5708, M_PI),
+                             tf::Vector3(0.23, 0.0, -0.003));
   tf::Transform world_to_tool = world_to_palm * palm_to_tool;
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
   m.lifetime = ros::Duration(0.0);
-  m.mesh_resource = "package://tools_description/meshes/nailer.dae";
+  m.mesh_resource = nailer_mesh_;
   marker_array_.markers.push_back(m);
 
   // Add the vacuum gripper in the left gripper
   geometry_msgs::Pose l_gripper_palm_pose = poses.at(25).pose;
   leatherman::poseMsgTobtTransform(l_gripper_palm_pose, world_to_palm);
-  palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(1.5708, 0.0, 0.0),
-                               tf::Vector3(0.18, 0.0, 0.0));
+  //palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(1.5708, 0.0, 0.0),
+  palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(0.0, 0.0, 0.0),
+                               tf::Vector3(0.183, 0.0, 0.0));
   world_to_tool = world_to_palm * palm_to_tool;
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
