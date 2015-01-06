@@ -148,6 +148,10 @@ class PViz
 
     visualization_msgs::MarkerArray getRobotMarkerMsg(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, bool use_embedded_materials = false);
 
+    visualization_msgs::MarkerArray getRightArmMarkerMsg(std::vector<double> &jnt0_pos, double x, double y, double z, double theta, double hue, std::string ns, int id, bool use_embedded_materials);
+
+    visualization_msgs::MarkerArray getLeftArmMarkerMsg(std::vector<double> &jnt0_pos, double x, double y, double z, double theta, double hue, std::string ns, int id, bool use_embedded_materials);
+
   private:
 
     ros::NodeHandle nh_;
@@ -199,6 +203,9 @@ class PViz
 
     /* \brief visualize robot meshes...not to be used publicly */
     void visualizeRobotMeshes(double hue, std::string ns, int start_id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials = false);
+
+    visualization_msgs::MarkerArray getRobotArmMeshesMarkerMsg(int arm_id, double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials);
+
 };
 
 #endif

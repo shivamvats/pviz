@@ -818,7 +818,7 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, 1.5708, M_PI),
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI_2, M_PI_2, M_PI),
                              tf::Vector3(0.23, 0.0, -0.003));
   tf::Transform world_to_tool = world_to_palm * palm_to_tool;
   m.id = id + marker_array_.markers.size();
@@ -912,7 +912,7 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, 1.5708, M_PI),
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(1.5708, 1.5708, M_PI),
                              tf::Vector3(0.23, 0.0, -0.003));
   tf::Transform world_to_tool = world_to_palm * palm_to_tool;
   m.id = id + marker_array_.markers.size();
@@ -1451,4 +1451,152 @@ void PViz::visualizeText(double x, double y, double z, double size, std::string 
   visualization_msgs::Marker m = viz::getTextMarker(p, text, size, hue, reference_frame_, ns, id);
   publish(m);
 }
+
+visualization_msgs::MarkerArray PViz::getRobotArmMeshesMarkerMsg(int arm_id, double hue, std::string ns, int id, std::vector<geometry_msgs::PoseStamped> &poses, bool use_embedded_materials)
+{
+  int cntr = 0;
+  double r,g,b;
+  marker_array_.markers.clear();
+  marker_array_.markers.resize(14);
+  ros::Time time = ros::Time();
+  leatherman::HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+
+  // defaults are for right arm
+  int i_min = 2, i_max = 16;
+  if(arm_id == LEFT)
+  {
+    i_min = 16;
+    i_max= 30;
+  }
+
+  for(int i = i_min; i < i_max; ++i)
+  {
+    marker_array_.markers[cntr].header.stamp = time;
+    marker_array_.markers[cntr].header.frame_id = reference_frame_;
+    marker_array_.markers[cntr].ns = ns;
+    marker_array_.markers[cntr].type = visualization_msgs::Marker::MESH_RESOURCE;
+    marker_array_.markers[cntr].id = id + cntr;
+    marker_array_.markers[cntr].action = visualization_msgs::Marker::ADD;
+    marker_array_.markers[cntr].pose = poses.at(i).pose;
+    marker_array_.markers[cntr].scale.x = 1.0;
+    marker_array_.markers[cntr].scale.y = 1.0;
+    marker_array_.markers[cntr].scale.z = 1.0;
+    if(use_embedded_materials)
+    {
+      marker_array_.markers[cntr].color.r = 0;
+      marker_array_.markers[cntr].color.g = 0;
+      marker_array_.markers[cntr].color.b = 0;
+      marker_array_.markers[cntr].color.a = 0;
+      marker_array_.markers[cntr].mesh_use_embedded_materials = true;
+    }
+    else
+    {
+      marker_array_.markers[cntr].color.r = r;
+      marker_array_.markers[cntr].color.g = g;
+      marker_array_.markers[cntr].color.b = b;
+      marker_array_.markers[cntr].color.a = 0.4;
+    }
+    marker_array_.markers[cntr].lifetime = ros::Duration(0.0);
+    marker_array_.markers[cntr].mesh_resource = robot_meshes_[i];
+    cntr++;
+  }
+  // Add the tools to the visualization
+  visualization_msgs::Marker m;
+  m.header.stamp = time;
+  m.header.frame_id = reference_frame_;
+  m.ns = ns;
+  m.type = visualization_msgs::Marker::MESH_RESOURCE;
+  m.action = visualization_msgs::Marker::ADD;
+  m.scale.x = 0.001;
+  m.scale.y = 0.001;
+  m.scale.z = 0.001;
+  if(use_embedded_materials)
+  {
+    m.color.r = 0;
+    m.color.g = 0;
+    m.color.b = 0;
+    m.color.a = 0;
+    m.mesh_use_embedded_materials = true;
+  }
+  else
+  {
+    m.color.r = r;
+    m.color.g = g;
+    m.color.b = b;
+    m.color.a = 0.4;
+  }
+
+  // Add the nailer in the right gripper
+  if(arm_id == RIGHT)
+  {
+    geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
+    tf::Transform world_to_palm;
+    leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
+    tf::Transform palm_to_tool(tf::createQuaternionFromRPY(1.5708, 1.5708, M_PI),
+                                                  tf::Vector3(0.23, 0.0, -0.003));
+    tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+    m.id = id + marker_array_.markers.size();
+    leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
+    m.lifetime = ros::Duration(0.0);
+    m.mesh_resource = nailer_mesh_;
+    marker_array_.markers.push_back(m);
+  }
+  // Add the vacuum gripper in the left gripper
+  else if(arm_id == LEFT)
+  {
+    geometry_msgs::Pose l_gripper_palm_pose = poses.at(25).pose;
+    tf::Transform world_to_palm;
+    leatherman::poseMsgTobtTransform(l_gripper_palm_pose, world_to_palm);
+    tf::Transform palm_to_tool = tf::Transform(tf::createQuaternionFromRPY(0.0, 0.0, 0.0),
+                                               tf::Vector3(0.183, 0.0, 0.0));
+    tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+    m.id = id + marker_array_.markers.size();
+    leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
+    m.lifetime = ros::Duration(0.0);
+    m.mesh_resource = vacuum_mesh_;
+    marker_array_.markers.push_back(m);
+  }
+  return marker_array_;
+}
+
+visualization_msgs::MarkerArray PViz::getRightArmMarkerMsg(std::vector<double> &jnt0_pos, double x, double y, double z, double theta, double hue, std::string ns, int id, bool use_embedded_materials)
+{
+  double torso_pos;
+  std::vector<double> base_pos(3,0);
+  std::vector<double> jnt1_pos(7,0);
+  base_pos[0] = x;
+  base_pos[1] = y;
+  base_pos[2] = theta;
+  torso_pos = z;
+
+  std::vector<geometry_msgs::PoseStamped> poses;
+  if(!computeFKforVisualizationWithKDL(jnt0_pos, jnt1_pos, base_pos, torso_pos, poses))
+  {
+    ROS_WARN("[pviz] Failed to compute forward kinematics. Cannot visualize robot.");
+    return visualization_msgs::MarkerArray();
+  }
+  else
+    return getRobotArmMeshesMarkerMsg(RIGHT, hue, ns, id, poses, use_embedded_materials);
+}
+
+visualization_msgs::MarkerArray PViz::getLeftArmMarkerMsg(std::vector<double> &jnt0_pos, double x, double y, double z, double theta, double hue, std::string ns, int id, bool use_embedded_materials)
+{
+  double torso_pos;
+  std::vector<double> base_pos(3,0);
+  std::vector<double> jnt1_pos(7,0);
+  base_pos[0] = x;
+  base_pos[1] = y;
+  base_pos[2] = theta;
+  torso_pos = z;
+
+  std::vector<geometry_msgs::PoseStamped> poses;
+  if(!computeFKforVisualizationWithKDL(jnt1_pos, jnt0_pos, base_pos, torso_pos, poses)) // input is for left arm
+  {
+    ROS_WARN("[pviz] Failed to compute forward kinematics. Cannot visualize robot.");
+    return visualization_msgs::MarkerArray();
+  }
+  else
+    return getRobotArmMeshesMarkerMsg(LEFT, hue, ns, id, poses, use_embedded_materials);
+}
+
 
