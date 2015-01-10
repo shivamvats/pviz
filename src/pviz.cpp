@@ -820,7 +820,8 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
   tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI_2, M_PI_2, M_PI),
                              tf::Vector3(0.23, 0.0, -0.003));
-  tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+  tf::Transform tool_to_mesh(tf::createQuaternionFromRPY(-M_PI_2,0,0), tf::Vector3(0,0,0));
+  tf::Transform world_to_tool = world_to_palm * palm_to_tool * tool_to_mesh;
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
   m.lifetime = ros::Duration(0.0);
@@ -913,8 +914,9 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
   tf::Transform palm_to_tool(tf::createQuaternionFromRPY(1.5708, 1.5708, M_PI),
-                             tf::Vector3(0.23, 0.0, -0.003));
-  tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+                                                        tf::Vector3(0.23, 0.0, -0.003));
+  tf::Transform tool_to_mesh(tf::createQuaternionFromRPY(-M_PI_2,0,0), tf::Vector3(0,0,0));
+  tf::Transform world_to_tool = world_to_palm * palm_to_tool * tool_to_mesh;
   m.id = id + marker_array_.markers.size();
   leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
   m.lifetime = ros::Duration(0.0);
@@ -1534,7 +1536,8 @@ visualization_msgs::MarkerArray PViz::getRobotArmMeshesMarkerMsg(int arm_id, dou
     leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
     tf::Transform palm_to_tool(tf::createQuaternionFromRPY(1.5708, 1.5708, M_PI),
                                                   tf::Vector3(0.23, 0.0, -0.003));
-    tf::Transform world_to_tool = world_to_palm * palm_to_tool;
+    tf::Transform tool_to_mesh(tf::createQuaternionFromRPY(-M_PI_2,0,0), tf::Vector3(0,0,0));
+    tf::Transform world_to_tool = world_to_palm * palm_to_tool * tool_to_mesh;
     m.id = id + marker_array_.markers.size();
     leatherman::btTransformToPoseMsg(world_to_tool, m.pose);
     m.lifetime = ros::Duration(0.0);
