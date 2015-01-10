@@ -815,10 +815,10 @@ void PViz::visualizeRobotMeshes(double hue, std::string ns, int id, std::vector<
   }
 
   // Add the nailer in the right gripper
-  geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
+  geometry_msgs::Pose r_gripper_palm_pose = poses.at(10).pose;
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI_2, M_PI_2, M_PI),
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, M_PI_2, M_PI),
                              tf::Vector3(0.23, 0.0, -0.003));
   tf::Transform tool_to_mesh(tf::createQuaternionFromRPY(-M_PI_2,0,0), tf::Vector3(0,0,0));
   tf::Transform world_to_tool = world_to_palm * palm_to_tool * tool_to_mesh;
@@ -910,10 +910,10 @@ visualization_msgs::MarkerArray PViz::getRobotMeshesMarkerMsg(double hue, std::s
   }
 
   // Add the nailer in the right gripper
-  geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
+  geometry_msgs::Pose r_gripper_palm_pose = poses.at(10).pose;
   tf::Transform world_to_palm;
   leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(1.5708, 1.5708, M_PI),
+  tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, 1.5708, M_PI),
                                                         tf::Vector3(0.23, 0.0, -0.003));
   tf::Transform tool_to_mesh(tf::createQuaternionFromRPY(-M_PI_2,0,0), tf::Vector3(0,0,0));
   tf::Transform world_to_tool = world_to_palm * palm_to_tool * tool_to_mesh;
@@ -1531,10 +1531,10 @@ visualization_msgs::MarkerArray PViz::getRobotArmMeshesMarkerMsg(int arm_id, dou
   // Add the nailer in the right gripper
   if(arm_id == RIGHT)
   {
-    geometry_msgs::Pose r_gripper_palm_pose = poses.at(9).pose;
+    geometry_msgs::Pose r_gripper_palm_pose = poses.at(10).pose;
     tf::Transform world_to_palm;
     leatherman::poseMsgTobtTransform(r_gripper_palm_pose, world_to_palm);
-    tf::Transform palm_to_tool(tf::createQuaternionFromRPY(1.5708, 1.5708, M_PI),
+    tf::Transform palm_to_tool(tf::createQuaternionFromRPY(M_PI, 1.5708, M_PI),
                                                   tf::Vector3(0.23, 0.0, -0.003));
     tf::Transform tool_to_mesh(tf::createQuaternionFromRPY(-M_PI_2,0,0), tf::Vector3(0,0,0));
     tf::Transform world_to_tool = world_to_palm * palm_to_tool * tool_to_mesh;
