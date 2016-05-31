@@ -16,7 +16,7 @@
 
   <!-- Dependencies needed to compile this package. -->
   <build_depend>roscpp</build_depend>
-  <build_depend>kdl</build_depend>
+  <build_depend>orocos_kdl</build_depend>
   <build_depend>kdl_parser</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>visualization_msgs</build_depend>
@@ -24,7 +24,7 @@
 
   <!-- Dependencies needed after this package is compiled. -->
   <run_depend>roscpp</run_depend>
-  <run_depend>kdl</run_depend>
+  <run_depend>orocos_kdl</run_depend>
   <run_depend>kdl_parser</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>visualization_msgs</run_depend>

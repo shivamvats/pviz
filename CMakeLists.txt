@@ -4,8 +4,21 @@ cmake_minimum_required(VERSION 2.8.3)
 project(pviz)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp kdl kdl_parser tf visualization_msgs leatherman)
+find_package(catkin REQUIRED COMPONENTS roscpp orocos_kdl kdl_parser tf visualization_msgs leatherman)
 
+## Generate added messages and services with any dependencies listed here
+#generate_messages(
+#    #TODO DEPENDENCIES geometry_msgs std_msgs
+#)
+
+# catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
+# TODO: fill in what other packages will need to use this package
+catkin_package(
+    DEPENDS roscpp orocos_kdl kdl_parser tf visualization_msgs leatherman
+    CATKIN_DEPENDS # TODO
+    INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}# TODO include
+    LIBRARIES ${catkin_LIBRARIES}# TODO
+)
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 # CATKIN_MIGRATION: removed during catkin migration
 # cmake_minimum_required(VERSION 2.4.6)
@@ -40,23 +53,10 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+include_directories(include ${catkin_INCLUDE_DIRS})
 add_library(pviz src/pviz.cpp)
 
 add_executable(pvizExample src/pviz_example.cpp)
 target_link_libraries(pvizExample pviz)
 
 
-
-## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#    #TODO DEPENDENCIES geometry_msgs std_msgs
-#)
-
-# catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
-# TODO: fill in what other packages will need to use this package
-catkin_package(
-    DEPENDS roscpp kdl kdl_parser tf visualization_msgs leatherman
-    CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
-    LIBRARIES # TODO
-)
