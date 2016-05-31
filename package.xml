@@ -1,0 +1,45 @@
+<package>
+  <name>pviz</name>
+  <version>1.0.0</version>
+  <description>The PR2 Visualization Library</description>
+  <maintainer email="bcohen@seas.upenn.edu">Benjamin Cohen</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://www.ros.org/wiki/pviz</url>
+  <!-- <url type="bugtracker"></url> -->
+
+  <author email="bcohen@seas.upenn.edu">Benjamin Cohen</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>kdl</build_depend>
+  <build_depend>kdl_parser</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>leatherman</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>roscpp</run_depend>
+  <run_depend>kdl</run_depend>
+  <run_depend>kdl_parser</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>leatherman</run_depend>
+
+  <!-- Dependencies needed only for running tests. -->
+  <!-- <test_depend>roscpp</test_depend> -->
+  <!-- <test_depend>kdl</test_depend> -->
+  <!-- <test_depend>kdl_parser</test_depend> -->
+  <!-- <test_depend>tf</test_depend> -->
+  <!-- <test_depend>visualization_msgs</test_depend> -->
+  <!-- <test_depend>leatherman</test_depend> -->
+
+<export>
+    <cpp lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib  -lpviz" cflags="-I${prefix}/include  -O3 -g"/>
+</export>
+
+</package>
