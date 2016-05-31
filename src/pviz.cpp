@@ -287,7 +287,7 @@ void PViz::visualizeObstacles(const std::vector<std::vector<double> > &obstacles
   color[3] = 0.9;
 
   for(size_t i = 0; i < obstacles.size(); ++i)
-    ma.markers[i] = viz::getCubeMarker(obstacles[i], color, reference_frame_, "obstacles", i);
+    //ma.markers[i] = viz::getCubeMarker(obstacles[i], color, reference_frame_, "obstacles", i);
   
   publish(ma);
 }

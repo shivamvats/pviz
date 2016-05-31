@@ -55,6 +55,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 add_library(pviz src/pviz.cpp)
+target_link_libraries(pviz ${catkin_LIBRARIES})
 
 add_executable(pvizExample src/pviz_example.cpp)
 target_link_libraries(pvizExample pviz)
