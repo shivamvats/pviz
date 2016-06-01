@@ -14,8 +14,8 @@ find_package(catkin REQUIRED COMPONENTS roscpp orocos_kdl kdl_parser tf visualiz
 # catkin_package parameters: http://ros.org/doc/groovy/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-package
 # TODO: fill in what other packages will need to use this package
 catkin_package(
-    DEPENDS roscpp orocos_kdl kdl_parser tf visualization_msgs leatherman
-    CATKIN_DEPENDS # TODO
+    DEPENDS roscpp orocos_kdl kdl_parser tf 
+    CATKIN_DEPENDS visualization_msgs leatherman# TODO
     INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}# TODO include
     LIBRARIES ${catkin_LIBRARIES}# TODO
 )
