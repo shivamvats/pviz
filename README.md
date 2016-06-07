@@ -64,3 +64,4 @@ needed.
 
 
 
+Works with pr2_monolithic_planner in indigo
