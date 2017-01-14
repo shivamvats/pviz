@@ -287,7 +287,7 @@ void PViz::visualizeObstacles(const std::vector<std::vector<double> > &obstacles
   color[3] = 0.9;
 
   for(size_t i = 0; i < obstacles.size(); ++i)
-    //ma.markers[i] = viz::getCubeMarker(obstacles[i], color, reference_frame_, "obstacles", i);
+    ma.markers[i] = viz::getCubeMarker(obstacles[i], color, reference_frame_, "obstacles", i);
   
   publish(ma);
 }
@@ -408,7 +408,7 @@ void PViz::deleteVisualizations(std::string ns, int max_id)
   publish(marker_array_);
 }
 
-void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
+void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath, std::string ns="path")
 {
   if(dpath.empty())
   {
@@ -420,7 +420,7 @@ void PViz::visualize3DPath(std::vector<std::vector<double> > &dpath)
   obs_marker.header.frame_id = reference_frame_;
   obs_marker.header.stamp = ros::Time();
   obs_marker.header.seq = 0;
-  obs_marker.ns = "path";
+  obs_marker.ns = ns;
   obs_marker.id = 0;
   obs_marker.type = visualization_msgs::Marker::SPHERE_LIST;
   obs_marker.action = 0;

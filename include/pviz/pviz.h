@@ -83,7 +83,7 @@ class PViz
     /* \brief visualize cuboids */
     void visualizeObstacles(const std::vector<std::vector<double> > &obstacles);
    
-    void visualize3DPath(std::vector<std::vector<double> > &dpath);
+    void visualize3DPath(std::vector<std::vector<double> > &dpath, std::string ns);
 
      /* \brief visualize a sphere */
     void visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id);

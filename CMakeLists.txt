@@ -4,7 +4,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(pviz)
 # Load catkin and all dependencies required for this package
 # TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS roscpp orocos_kdl kdl_parser tf visualization_msgs leatherman)
+find_package(catkin REQUIRED COMPONENTS roscpp  kdl_parser tf visualization_msgs leatherman)
+find_package(orocos_kdl REQUIRED)
 
 ## Generate added messages and services with any dependencies listed here
 #generate_messages(
